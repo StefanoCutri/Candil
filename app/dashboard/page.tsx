@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@supabase/ssr'
+import PomodoroTimer from './PomodoroTimer'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
@@ -102,7 +103,7 @@ export default async function DashboardPage() {
       <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px' }}>
         {/* Header */}
         <div style={{ marginBottom: 40 }}>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '0.85rem', marginBottom: 4 }}>Hola,</p>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 4 }}>Hola,</p>
           <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '2rem', marginBottom: 6 }}>
             {nombre}.
           </h1>
@@ -138,10 +139,10 @@ export default async function DashboardPage() {
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--ink-soft)', fontSize: '0.82rem' }}>
                         {tipoLabel(examen.tipo)}
                       </span>
-                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--ink-soft)', fontSize: '0.82rem' }}>
                         {new Date(examen.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
                       </span>
                       <span style={{ color: dias === 'Pasado' ? 'var(--ink-muted)' : 'var(--amber)', fontSize: '0.82rem', fontWeight: 500 }}>
@@ -181,6 +182,8 @@ export default async function DashboardPage() {
             </Link>
           </div>
         )}
+
+        <PomodoroTimer />
       </main>
     </div>
   )

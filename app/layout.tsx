@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
-import { Libre_Baskerville } from 'next/font/google'
+import { Bricolage_Grotesque } from 'next/font/google'
 import { GeistSans } from 'geist/font/sans'
 import './globals.css'
 
-const baskerville = Libre_Baskerville({
+const display = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['400', '700'],
-  style: ['normal', 'italic'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-baskerville',
   display: 'swap'
 })
@@ -24,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${baskerville.variable} ${GeistSans.variable}`}>
+    <html lang="es" className={`${display.variable} ${GeistSans.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   )

@@ -1,544 +1,363 @@
 'use client'
 
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useState } from 'react'
+import './landing.css'
 
-/* ── Candle / Flame SVG ──────────────────────────────────────────────── */
-function CandleFlame({ size = 120 }: { size?: number }) {
-  return (
-    <svg width={size} height={size * 1.5} viewBox="0 0 80 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="glow" cx="50%" cy="60%" r="50%">
-          <stop offset="0%" stopColor="#F5C97A" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#E8A44A" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="outerFlame" cx="50%" cy="75%" r="55%" fx="50%" fy="80%">
-          <stop offset="0%" stopColor="#F5C97A" />
-          <stop offset="45%" stopColor="#E8A44A" />
-          <stop offset="100%" stopColor="#C45E0A" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="innerFlame" cx="50%" cy="65%" r="45%" fx="50%" fy="70%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
-          <stop offset="35%" stopColor="#FFFBEF" />
-          <stop offset="100%" stopColor="#F5C97A" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      {/* Ambient glow */}
-      <ellipse cx="40" cy="72" rx="38" ry="32" fill="url(#glow)" className="flame-glow" />
-
-      {/* Outer flame */}
-      <path
-        d="M40 8 C30 22 18 40 20 62 C22 74 30 84 40 90 C50 84 58 74 60 62 C62 40 50 22 40 8Z"
-        fill="url(#outerFlame)"
-        className="flame-outer"
-      />
-
-      {/* Inner flame (bright core) */}
-      <path
-        d="M40 30 C35 40 31 52 33 64 C35 72 38 79 40 83 C42 79 45 72 47 64 C49 52 45 40 40 30Z"
-        fill="url(#innerFlame)"
-        className="flame-inner"
-      />
-
-      {/* Highlight streak */}
-      <path
-        d="M37 38 C36 46 35 54 36 60 C37 53 38 46 39 40Z"
-        fill="white"
-        opacity="0.35"
-        className="flame-inner"
-      />
-
-      {/* Wick */}
-      <line x1="40" y1="83" x2="40" y2="92" stroke="#3D2B1F" strokeWidth="1.5" strokeLinecap="round" />
-
-      {/* Candle body */}
-      <rect x="26" y="91" width="28" height="26" rx="2" fill="#3D2B1F" />
-      <rect x="26" y="91" width="28" height="3" rx="1" fill="rgba(232,164,74,0.25)" />
-
-      {/* Wax drip detail */}
-      <rect x="26" y="94" width="4" height="8" rx="2" fill="rgba(232,164,74,0.1)" />
-    </svg>
-  )
-}
-
-function CandleIcon({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2C10.5 4.5 9 7 9.5 10.5C10 13 11 15 12 16C13 15 14 13 14.5 10.5C15 7 13.5 4.5 12 2Z" fill="#E8A44A" />
-      <path d="M12 4C11.3 5.5 10.5 7.5 11 10C11.3 11.5 11.7 13 12 14C12.3 13 12.7 11.5 13 10C13.5 7.5 12.7 5.5 12 4Z" fill="#F5C97A" />
-      <line x1="12" y1="15.5" x2="12" y2="17" stroke="#3D2B1F" strokeWidth="1.2" />
-      <rect x="9" y="17" width="6" height="5" rx="0.5" fill="#3D2B1F" />
-    </svg>
-  )
-}
-
-/* ── App mockup component ────────────────────────────────────────────── */
-function AppMockup() {
-  const blocks = [
-    { tema: 'Teorema de Bayes', tiempo: '20:00 – 21:30', tipo: 'estudio', completado: true },
-    { tema: 'Distribuciones discretas', tiempo: '21:45 – 22:45', tipo: 'estudio', completado: true },
-    { tema: 'Pausa activa', tiempo: '22:45 – 23:00', tipo: 'pausa', completado: false },
-    { tema: 'Ejercicios de práctica', tiempo: '23:00 – 23:45', tipo: 'simulacro', completado: false }
-  ]
-
-  const tipoColor: Record<string, string> = {
-    estudio: 'rgba(232,164,74,0.15)',
-    pausa: 'rgba(249,232,200,0.08)',
-    simulacro: 'rgba(232,164,74,0.25)',
-    repaso: 'rgba(245,201,122,0.15)'
-  }
-
-  return (
-    <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 16, padding: 20, maxWidth: 360, width: '100%' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.05rem' }}>Probabilidad y Estadística</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--amber)', background: 'rgba(232,164,74,0.12)', padding: '3px 8px', borderRadius: 4 }}>Faltan 3 días</span>
-        </div>
-        {/* Progress */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="progress-bar" style={{ flex: 1 }}>
-            <div className="progress-fill" style={{ width: '50%' }} />
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--ink-soft)' }}>50%</span>
-        </div>
-      </div>
-
-      {/* Day label */}
-      <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Martes 10 de junio</p>
-
-      {/* Blocks */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {blocks.map((b, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: tipoColor[b.tipo], borderRadius: 8, border: '0.5px solid var(--border)', opacity: b.completado ? 0.6 : 1 }}>
-            <input
-              type="checkbox"
-              className="check-block"
-              defaultChecked={b.completado}
-              readOnly
-              style={{ pointerEvents: 'none' }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, textDecoration: b.completado ? 'line-through' : 'none' }}>{b.tema}</p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>{b.tiempo}</p>
-            </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--amber)', background: 'rgba(232,164,74,0.1)', padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>{b.tipo}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ── Nav ─────────────────────────────────────────────────────────────── */
-function Nav() {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      background: 'rgba(21,15,7,0.85)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '0.5px solid var(--border)'
-    }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <CandleIcon size={22} />
-          <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--amber)', fontSize: '1.15rem', fontWeight: 700 }}>Candil</span>
-        </Link>
-
-        {/* Desktop links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="hidden-mobile">
-          <a href="#caracteristicas" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}>Características</a>
-          <a href="#como-funciona" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}>Cómo funciona</a>
-          <a href="#precios" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}>Precios</a>
-        </div>
-
-        {/* CTA */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/login" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: '0.9rem' }}>Ingresar</Link>
-          <Link href="/registro" className="btn-primary" style={{ padding: '8px 18px', fontSize: '0.88rem' }}>
-            Empezar gratis
-          </Link>
-        </div>
-      </div>
-    </nav>
-  )
-}
-
-/* ── Footer ──────────────────────────────────────────────────────────── */
-function Footer() {
-  return (
-    <footer style={{ borderTop: '0.5px solid var(--border)', padding: '40px 24px', marginTop: 80 }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CandleIcon size={18} />
-          <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--amber)', fontWeight: 700 }}>Candil</span>
-        </div>
-        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-          {['Características', 'Precios', 'Privacidad', 'Términos'].map(l => (
-            <a key={l} href="#" style={{ color: 'var(--ink-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>{l}</a>
-          ))}
-        </div>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '0.82rem' }}>© 2026 Candil. Hecho con paciencia y café.</p>
-      </div>
-    </footer>
-  )
-}
-
-/* ── Landing page ────────────────────────────────────────────────────── */
 export default function LandingPage() {
+  const [isLight, setIsLight] = useState(false)
+  const flameRef = useRef<SVGSVGElement | null>(null)
+
+  // Scope landing styles + cleanup on nav away
+  useEffect(() => {
+    document.body.classList.add('lp')
+    return () => {
+      document.body.classList.remove('lp')
+      document.body.classList.remove('light')
+    }
+  }, [])
+
+  // Light/dark toggle
+  useEffect(() => {
+    if (isLight) document.body.classList.add('light')
+    else document.body.classList.remove('light')
+  }, [isLight])
+
+  // Scroll reveal
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+      }),
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    )
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  // Hero entrance
+  useEffect(() => {
+    ;(['hero-eyebrow', 'hero-h1', 'hero-sub', 'hero-actions'] as const).forEach((cls, i) => {
+      const el = document.querySelector<HTMLElement>(`.${cls}`)
+      if (!el) return
+      el.style.opacity = '0'
+      el.style.transform = 'translateY(20px)'
+      el.style.transition = `opacity 800ms cubic-bezier(0.23,1,0.32,1) ${i * 120 + 200}ms,transform 800ms cubic-bezier(0.23,1,0.32,1) ${i * 120 + 200}ms`
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.opacity = '1'
+        el.style.transform = 'translateY(0)'
+      }))
+    })
+  }, [])
+
+  const toggleTheme = useCallback(() => {
+    const flame = flameRef.current
+    if (!flame) return
+    if (isLight) {
+      flame.style.opacity = '0'
+      flame.style.filter = 'drop-shadow(0 0 0px rgba(232,164,74,0))'
+      flame.style.animationPlayState = 'paused'
+      setTimeout(() => {
+        setIsLight(false)
+        flame.style.transition = 'opacity 400ms ease-out, filter 600ms ease-out'
+        flame.style.opacity = '1'
+        flame.style.filter = 'drop-shadow(0 0 40px rgba(232,164,74,0.7))'
+        flame.style.animationPlayState = 'running'
+        setTimeout(() => { flame.style.filter = 'drop-shadow(0 0 28px rgba(232,164,74,0.45))' }, 600)
+      }, 300)
+    } else {
+      flame.style.transition = 'opacity 300ms ease-in, filter 300ms ease-in'
+      flame.style.opacity = '0.6'
+      setTimeout(() => { flame.style.opacity = '0.3' }, 80)
+      setTimeout(() => {
+        flame.style.opacity = '0'
+        flame.style.filter = 'drop-shadow(0 0 0 transparent)'
+      }, 220)
+      setTimeout(() => {
+        flame.style.animationPlayState = 'paused'
+        setIsLight(true)
+      }, 300)
+    }
+  }, [isLight])
+
   return (
     <>
-      <Nav />
-
-      <main style={{ paddingTop: 60 }}>
-
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section style={{
-          minHeight: '92vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '80px 24px 60px',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Ambient background glow */}
-          <div style={{
-            position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
-            width: 600, height: 600,
-            background: 'radial-gradient(circle, rgba(232,164,74,0.06) 0%, transparent 70%)',
-            pointerEvents: 'none'
-          }} />
-
-          {/* Badge */}
-          <div className="fade-up" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: 'rgba(232,164,74,0.1)',
-            border: '0.5px solid var(--border-strong)',
-            borderRadius: 20, padding: '5px 14px', marginBottom: 32,
-            fontSize: '0.82rem', color: 'var(--amber)'
-          }}>
-            <CandleIcon size={14} />
-            Tu compañero de estudio con IA
+      {/* ── NAV ── */}
+      <nav>
+        <Link href="/" className="nav-logo">
+          <div className="candle-wrap">
+            <svg className="candle-dark" width="18" height="30" viewBox="0 0 18 30" fill="none">
+              <path d="M9 1C9 1 14 7 14 11.5C14 14.8 11.8 17.5 9 17.5C6.2 17.5 4 14.8 4 11.5C4 7 9 1 9 1Z" fill="#E8A44A" opacity="0.88"/>
+              <path d="M9 5C9 5 12.5 9 12.5 11.8C12.5 13.6 10.9 15 9 15C7.1 15 5.5 13.6 5.5 11.8C5.5 9 9 5 9 5Z" fill="#F5C97A"/>
+              <path d="M9 9C9 9 10.5 11 10.5 12C10.5 12.8 9.8 13.4 9 13.4C8.2 13.4 7.5 12.8 7.5 12C7.5 11 9 9 9 9Z" fill="white" opacity="0.5"/>
+              <rect x="6" y="17.5" width="6" height="9" rx="1.5" fill="#6B4226"/>
+              <path d="M6 20C5.2 20.5 5 21.5 5 22C5 22.6 5.5 23 6 23V20Z" fill="#8B5E3C" opacity="0.5"/>
+              <rect x="4" y="26.5" width="10" height="2.5" rx="1.25" fill="#3D2B1F"/>
+            </svg>
+            <svg className="candle-light" width="18" height="30" viewBox="0 0 18 30" fill="none">
+              <line x1="9" y1="2" x2="9" y2="6" stroke="#9B8060" strokeWidth="1" strokeLinecap="round"/>
+              <rect x="6" y="6" width="6" height="19" rx="1.5" fill="#C8B89A"/>
+              <line x1="6.5" y1="10" x2="11.5" y2="10" stroke="#B8A888" strokeWidth="0.5" opacity="0.6"/>
+              <line x1="6.5" y1="14" x2="11.5" y2="14" stroke="#B8A888" strokeWidth="0.5" opacity="0.6"/>
+              <line x1="6.5" y1="18" x2="11.5" y2="18" stroke="#B8A888" strokeWidth="0.5" opacity="0.6"/>
+              <path d="M6 9C5.2 9.5 5 10.5 5 11C5 11.6 5.5 12 6 12V9Z" fill="#B8A888" opacity="0.6"/>
+              <rect x="4" y="25" width="10" height="2.5" rx="1.25" fill="#B0A090"/>
+            </svg>
           </div>
+          Candil
+        </Link>
+        <div className="nav-links">
+          <a href="#como">Cómo funciona</a>
+          <a href="#precios">Precios</a>
+          <button className="theme-btn" onClick={toggleTheme} aria-label="Cambiar tema">
+            {isLight ? '◑' : '☀︎'}
+          </button>
+          <a href="#precios" className="nav-cta">Empezar gratis</a>
+        </div>
+      </nav>
 
-          {/* Flame */}
-          <div className="candle-sway fade-up fade-up-1" style={{ marginBottom: 24 }}>
-            <CandleFlame size={100} />
-          </div>
+      {/* ── HERO ── */}
+      <section className="hero">
+        <div className="hero-glow" />
 
-          {/* Headline */}
-          <h1 className="fade-up fade-up-2" style={{
-            fontFamily: 'var(--font-baskerville)',
-            fontSize: 'clamp(2.4rem, 6vw, 4.2rem)',
-            fontWeight: 700,
-            lineHeight: 1.15,
-            color: 'var(--ink)',
-            marginBottom: 20,
-            maxWidth: 700
-          }}>
-            Tu examen,<br />
-            <span style={{ color: 'var(--amber)' }}>tu ritmo,</span>{' '}
-            tu plan.
-          </h1>
+        <div className="hero-candle-wrap">
+          <div className="hero-glow-ring" />
 
-          <p className="fade-up fade-up-3" style={{
-            fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
-            color: 'var(--ink-soft)',
-            maxWidth: 540,
-            lineHeight: 1.7,
-            marginBottom: 40
-          }}>
-            Cargá tu examen, decinos tu tiempo.
-            Candil arma el plan. Vos estudiás.
-          </p>
+          {/* Smoke — light mode only */}
+          <svg className="hero-smoke" width="30" height="40" viewBox="0 0 30 40" fill="none">
+            <path className="smoke-path" d="M15 35 Q18 25 12 15 Q9 8 15 2" stroke="rgba(100,80,60,0.35)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path className="smoke-path" d="M15 35 Q11 24 17 14 Q20 8 14 2" stroke="rgba(100,80,60,0.2)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+            <path className="smoke-path" d="M15 35 Q19 27 13 18 Q10 12 16 5" stroke="rgba(100,80,60,0.15)" strokeWidth="1" fill="none" strokeLinecap="round"/>
+          </svg>
 
-          {/* CTAs */}
-          <div className="fade-up fade-up-4" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link href="/registro" className="btn-primary" style={{ fontSize: '1rem', padding: '13px 32px' }}>
-              Empezar gratis
-            </Link>
-            <a href="#como-funciona" className="btn-secondary" style={{ fontSize: '1rem', padding: '12px 32px' }}>
-              Ver cómo funciona
-            </a>
-          </div>
+          {/* Flame — dark mode */}
+          <svg ref={flameRef} className="hero-flame" width="72" height="100" viewBox="0 0 72 100" fill="none">
+            <path d="M36 4C36 4 58 28 58 46C58 59.8 48.5 71 36 71C23.5 71 14 59.8 14 46C14 28 36 4 36 4Z" fill="#E8A44A" opacity="0.88"/>
+            <path d="M36 20C36 20 50 36 50 48C50 55.7 43.7 62 36 62C28.3 62 22 55.7 22 48C22 36 36 20 36 20Z" fill="#F5C97A"/>
+            <path d="M36 38C36 38 42 45 42 50C42 53.3 39.3 56 36 56C32.7 56 30 53.3 30 50C30 45 36 38 36 38Z" fill="white" opacity="0.55"/>
+          </svg>
 
-          <p style={{ marginTop: 20, color: 'var(--ink-muted)', fontSize: '0.82rem' }}>
-            Sin tarjeta de crédito. Un plan activo gratis para siempre.
-          </p>
-        </section>
+          {/* Candle body — always visible */}
+          <svg style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }} width="40" height="44" viewBox="0 0 40 44" fill="none">
+            <rect x="13" y="0" width="14" height="32" rx="3" fill="#6B4226"/>
+            <path d="M13 5C11 6.5 10 9 10 11C10 13 11.5 14 13 14V5Z" fill="#8B5E3C" opacity="0.5"/>
+            <rect x="6" y="32" width="28" height="7" rx="3.5" fill="#3D2B1F"/>
+            <ellipse cx="20" cy="40" rx="18" ry="3.5" fill="rgba(21,15,7,0.4)"/>
+          </svg>
+        </div>
 
-        {/* ── Por qué Candil ───────────────────────────────────────── */}
-        <section style={{ padding: '80px 24px', maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 60, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Mockup */}
-            <div style={{ flexShrink: 0 }}>
-              <AppMockup />
-            </div>
+        <p className="hero-eyebrow">Tu compañero de estudio</p>
 
-            {/* Text */}
-            <div style={{ flex: 1, minWidth: 260, maxWidth: 480 }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Por qué Candil</p>
-              <h2 style={{ fontFamily: 'var(--font-baskerville)', fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', color: 'var(--ink)', lineHeight: 1.3, marginBottom: 20 }}>
-                Un plan que se adapta<br />a tu vida, no al revés.
+        <h1 className="hero-h1">
+          El plan que necesitás,<br/>
+          <em>cuando más lo necesitás.</em>
+        </h1>
+
+        <p className="hero-sub">
+          Contanos tu examen, tus horarios y lo que tenés que estudiar. Candil arma el plan. Vos solo tenés que estudiar.
+        </p>
+
+        <div className="hero-actions">
+          <Link href="/registro" className="lp-btn">Empezar gratis</Link>
+          <a href="#como" className="lp-btn-ghost">Ver cómo funciona →</a>
+        </div>
+
+        <div className="hero-scroll">
+          <div className="scroll-line" />
+          <span>scrolleá</span>
+        </div>
+      </section>
+
+      {/* ── EL MOMENTO ── */}
+      <section className="momento lp-section" id="como">
+        <div className="container">
+          <div className="momento-grid">
+            <div className="reveal">
+              <p className="momento-label">Por qué Candil</p>
+              <h2 className="momento-h2">
+                El estudio tiene<br/>sus propios<br/>
+                <em>momentos.</em>
               </h2>
-              <p style={{ color: 'var(--ink-soft)', lineHeight: 1.75, marginBottom: 28, fontSize: '0.97rem' }}>
-                La mayoría de los planes de estudio ignoran tu vida real.
-                Candil sabe cuántas horas tenés cada día, qué temas ya sabés y cuál es tu preferencia de horario.
-                Y con eso arma algo que en verdad podés cumplir.
+              <p className="momento-p">
+                No somos una app de productividad. Somos ese amigo que ya rindió, que sabe exactamente lo que tenés, el tiempo que te queda, y cómo distribuirlo para que llegues.
               </p>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {[
-                  'Distribuye los temas según el peso en el examen',
-                  'Los temas que ya sabés solo necesitan un repaso breve',
-                  'El último día es siempre repaso + simulacro',
-                  'Pausas automáticas cada 90 minutos de estudio'
-                ].map((item, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, color: 'var(--ink-soft)', fontSize: '0.93rem' }}>
-                    <span style={{ color: 'var(--amber)', marginTop: 2, flexShrink: 0 }}>→</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
             </div>
-          </div>
-        </section>
-
-        {/* ── Cómo funciona ────────────────────────────────────────── */}
-        <section id="como-funciona" style={{ padding: '80px 24px', background: 'var(--bg2)' }}>
-          <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Cómo funciona</p>
-            <h2 style={{ fontFamily: 'var(--font-baskerville)', fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', color: 'var(--ink)', marginBottom: 60 }}>
-              Tres pasos. Eso es todo.
-            </h2>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, justifyContent: 'center' }}>
-              {[
-                {
-                  n: '01',
-                  title: 'Cargá tu examen',
-                  desc: 'Nombre de la materia, fecha, tipo de examen y los temas que entran. Marcá los que ya sabés.'
-                },
-                {
-                  n: '02',
-                  title: 'Decinos tu tiempo',
-                  desc: 'Cuántas horas tenés cada día y en qué franja horaria preferís estudiar. Sin compromiso.'
-                },
-                {
-                  n: '03',
-                  title: 'Recibí tu plan',
-                  desc: 'Candil genera un cronograma personalizado con bloques, pausas y descripciones de qué hacer en cada bloque.'
-                }
-              ].map((step) => (
-                <div key={step.n} className="card" style={{ flex: 1, minWidth: 220, maxWidth: 260, padding: 28, textAlign: 'left' }}>
-                  <span style={{
-                    display: 'block', fontFamily: 'var(--font-baskerville)', fontSize: '2.2rem',
-                    color: 'rgba(232,164,74,0.25)', fontWeight: 700, marginBottom: 16, lineHeight: 1
-                  }}>{step.n}</span>
-                  <h3 style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 10, fontSize: '1.05rem' }}>{step.title}</h3>
-                  <p style={{ color: 'var(--ink-soft)', lineHeight: 1.65, fontSize: '0.9rem' }}>{step.desc}</p>
+            <div className="reveal reveal-delay-2">
+              <div className="mockup-desk">
+                <div className="mock-header">
+                  <svg width="14" height="22" viewBox="0 0 14 22" fill="none">
+                    <path d="M7 1C7 1 12 6.5 12 10.5C12 13.6 9.8 16.5 7 16.5C4.2 16.5 2 13.6 2 10.5C2 6.5 7 1 7 1Z" fill="#E8A44A" opacity="0.9"/>
+                    <path d="M7 5C7 5 10 8.5 10 11C10 12.7 8.7 14 7 14C5.3 14 4 12.7 4 11C4 8.5 7 5 7 5Z" fill="#F5C97A"/>
+                    <rect x="4.5" y="16.5" width="5" height="4" rx="1" fill="#6B4226"/>
+                  </svg>
+                  <span className="mock-logo">Candil</span>
+                  <span className="mock-greeting">examen · lunes</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Manifiesto ───────────────────────────────────────────── */}
-        <section style={{ padding: '80px 24px' }}>
-          <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-            <blockquote style={{
-              fontFamily: 'var(--font-baskerville)',
-              fontSize: 'clamp(1.2rem, 2.5vw, 1.6rem)',
-              color: 'var(--ink)',
-              lineHeight: 1.7,
-              fontStyle: 'italic',
-              borderLeft: 'none',
-              padding: 0,
-              position: 'relative'
-            }}>
-              <span style={{ position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)', fontSize: '4rem', color: 'var(--amber)', opacity: 0.3, fontFamily: 'Georgia, serif', lineHeight: 1 }}>"</span>
-              Estudiar no debería ser un acto de disciplina ciega.
-              Debería ser un acto de confianza en tu propio proceso.
-              Candil no te dice cuánto valéis. Te ayuda a llegar.
-            </blockquote>
-          </div>
-        </section>
-
-        {/* ── Features ─────────────────────────────────────────────── */}
-        <section id="caracteristicas" style={{ padding: '80px 24px', background: 'var(--bg2)' }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Características</p>
-              <h2 style={{ fontFamily: 'var(--font-baskerville)', fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', color: 'var(--ink)' }}>
-                Todo lo que necesitás para rendir bien.
-              </h2>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-              {[
-                {
-                  n: '01',
-                  title: 'Plan personalizado con IA',
-                  desc: 'La IA distribuye los temas según el peso en el examen, tu tiempo real y tu horario preferido. No es un template — es tu plan.'
-                },
-                {
-                  n: '02',
-                  title: 'Progreso visual en tiempo real',
-                  desc: 'Tachá los bloques a medida que estudiás. La barra de progreso se actualiza sola. Ves cuánto te falta de verdad.'
-                },
-                {
-                  n: '03',
-                  title: 'Ajuste con lenguaje natural',
-                  desc: '"Mové el tema 3 para el domingo." "No puedo el viernes." Escribilo y Candil reorganiza el plan. Solo en Pro.'
-                },
-                {
-                  n: '04',
-                  title: 'Compartí tu plan',
-                  desc: 'Generá un link público para compartir con compañeros o profesores. Sin cuenta necesaria para verlo.'
-                }
-              ].map((f) => (
-                <div key={f.n} className="card" style={{ padding: 28 }}>
-                  <span style={{ display: 'block', fontFamily: 'var(--font-baskerville)', fontSize: '1.8rem', color: 'var(--amber)', opacity: 0.4, fontWeight: 700, marginBottom: 14, lineHeight: 1 }}>{f.n}</span>
-                  <h3 style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 10, fontSize: '1rem' }}>{f.title}</h3>
-                  <p style={{ color: 'var(--ink-soft)', lineHeight: 1.65, fontSize: '0.88rem' }}>{f.desc}</p>
+                <div className="mock-card">
+                  <div className="mock-dot mock-dot-done" />
+                  <span className="mock-title mock-title-done">Tema 1 — Sistema nervioso</span>
+                  <span className="mock-tag mock-tag-e">Completado</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Pricing ──────────────────────────────────────────────── */}
-        <section id="precios" style={{ padding: '80px 24px' }}>
-          <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Precios</p>
-              <h2 style={{ fontFamily: 'var(--font-baskerville)', fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', color: 'var(--ink)' }}>
-                Sin sorpresas. Sin compromisos.
-              </h2>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, justifyContent: 'center' }}>
-              {[
-                {
-                  name: 'Free',
-                  price: '$0',
-                  period: 'para siempre',
-                  featured: false,
-                  features: [
-                    '1 plan activo',
-                    'Generación básica con IA',
-                    'Compartir plan',
-                    'Progreso visual'
-                  ],
-                  cta: 'Empezar gratis',
-                  href: '/registro'
-                },
-                {
-                  name: 'Pro',
-                  price: '$4.99',
-                  period: 'por mes',
-                  featured: true,
-                  features: [
-                    'Planes ilimitados',
-                    'Ajuste por chat con IA',
-                    'Historial completo',
-                    'Exportar plan',
-                    'Soporte por email'
-                  ],
-                  cta: 'Empezar con Pro',
-                  href: '/registro?plan=pro'
-                },
-                {
-                  name: 'Plus',
-                  price: '$9.99',
-                  period: 'por mes',
-                  featured: false,
-                  features: [
-                    'Todo lo de Pro',
-                    'Análisis de rendimiento',
-                    'Flashcards generadas',
-                    'Soporte prioritario',
-                    'Acceso anticipado a funciones'
-                  ],
-                  cta: 'Empezar con Plus',
-                  href: '/registro?plan=plus'
-                }
-              ].map((tier) => (
-                <div key={tier.name} className="card" style={{
-                  flex: 1, minWidth: 260, maxWidth: 300, padding: 28,
-                  border: tier.featured ? '0.5px solid var(--amber)' : '0.5px solid var(--border)',
-                  position: 'relative'
-                }}>
-                  {tier.featured && (
-                    <div style={{
-                      position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                      background: 'var(--amber)', color: 'var(--bg)', fontSize: '0.72rem', fontWeight: 600,
-                      padding: '3px 12px', borderRadius: 10, whiteSpace: 'nowrap'
-                    }}>
-                      Más elegido
-                    </div>
-                  )}
-                  <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>{tier.name}</p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontFamily: 'var(--font-baskerville)', fontSize: '2.4rem', color: 'var(--ink)', fontWeight: 700 }}>{tier.price}</span>
-                    <span style={{ color: 'var(--ink-muted)', fontSize: '0.85rem' }}>{tier.period}</span>
-                  </div>
-                  <hr className="divider" style={{ marginBottom: 20, marginTop: 16 }} />
-                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-                    {tier.features.map((f) => (
-                      <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: 'var(--ink-soft)', fontSize: '0.88rem' }}>
-                        <span style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 1 }}>✓</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={tier.href}
-                    className={tier.featured ? 'btn-primary' : 'btn-secondary'}
-                    style={{ width: '100%', justifyContent: 'center' }}
-                  >
-                    {tier.cta}
-                  </Link>
+                <div className="mock-card" style={{ borderColor: 'var(--border-strong)' }}>
+                  <div className="mock-dot mock-dot-now" />
+                  <span className="mock-title mock-title-now">Tema 2 — Sistema endocrino</span>
+                  <span className="mock-tag mock-tag-e">Ahora</span>
                 </div>
-              ))}
+                <div className="mock-card">
+                  <div className="mock-dot mock-dot-next" />
+                  <span className="mock-title">Tema 3 — Sistema digestivo</span>
+                  <span className="mock-tag mock-tag-d">Mañana</span>
+                </div>
+                <div className="mock-progress">
+                  <div className="mock-bar"><div className="mock-bar-fill" /></div>
+                  <span className="mock-bar-text">2 de 7 ✓</span>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── CTA final ────────────────────────────────────────────── */}
-        <section style={{ padding: '80px 24px', background: 'var(--bg2)', textAlign: 'center' }}>
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
-              <CandleFlame size={60} />
+      {/* ── CÓMO FUNCIONA ── */}
+      <section className="lp-section">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '5rem' }} className="reveal">
+            <h2 className="section-h2">Tres pasos.<br/><em>Un solo plan.</em></h2>
+            <p className="section-p">Sin complicaciones. En menos de dos minutos tenés tu plan listo para tachar.</p>
+          </div>
+          <div className="steps">
+            <div className="step reveal">
+              <div className="step-accent" />
+              <div className="step-num">01</div>
+              <h3 className="step-title">Cargá tu examen</h3>
+              <p className="step-desc">Materia, temas, tipo de examen y fecha. Si algunos temas ya los sabés, marcalos. Candil los descuenta.</p>
             </div>
-            <h2 style={{
-              fontFamily: 'var(--font-baskerville)',
-              fontSize: 'clamp(1.8rem, 4vw, 3rem)',
-              color: 'var(--ink)',
-              lineHeight: 1.25,
-              marginBottom: 16
-            }}>
-              Tu próximo examen empieza hoy.
-            </h2>
-            <p style={{ color: 'var(--ink-soft)', fontSize: '1rem', lineHeight: 1.7, marginBottom: 36 }}>
-              No hace falta ser disciplinado. Hace falta tener un buen plan.
-            </p>
-            <Link href="/registro" className="btn-primary" style={{ fontSize: '1.05rem', padding: '14px 40px' }}>
-              Crear mi primer plan gratis
+            <div className="step reveal reveal-delay-1">
+              <div className="step-accent" />
+              <div className="step-num">02</div>
+              <h3 className="step-title">Contanos tu tiempo</h3>
+              <p className="step-desc">Cuántas horas tenés por día. Si el sábado trabajás hasta las 3pm, también. El plan se adapta a tu vida, no al revés.</p>
+            </div>
+            <div className="step reveal reveal-delay-2">
+              <div className="step-accent" />
+              <div className="step-num">03</div>
+              <h3 className="step-title">Empezá a estudiar</h3>
+              <p className="step-desc">Tu plan aparece con bloques, horarios y pausas. Tachás lo que vas haciendo. Candil te acompaña en cada momento.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── MANIFIESTO ── */}
+      <section className="manifiesto">
+        <div className="container-narrow">
+          <blockquote className="reveal">
+            "Hay un momento en que solo existís vos y el apunte. Candil está ahí."
+          </blockquote>
+          <cite className="reveal reveal-delay-1">— La idea detrás de Candil</cite>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section className="lp-section">
+        <div className="container">
+          <div className="reveal" style={{ textAlign: 'center' }}>
+            <h2 className="section-h2">Todo lo que necesitás.<br/><em>Nada que sobre.</em></h2>
+          </div>
+          <div className="features-grid">
+            {[
+              { n: '01', title: 'Plan inteligente con IA', desc: 'Distribuye temas según su peso en el examen, tus horas disponibles y tu energía. No es un calendario — es un plan que piensa.', pill: 'Gratis' },
+              { n: '02', title: 'Se adapta a tu vida real', desc: 'Trabajás el sábado hasta las 3pm, tenés clases el miércoles, un compromiso el domingo. Candil lo sabe y distribuye en consecuencia.', pill: 'Pro' },
+              { n: '03', title: 'Ajuste por chat', desc: '"Mové el digestivo para el domingo" o "tengo dos horas más el sábado". La IA reorganiza el plan al instante, sin empezar de cero.', pill: 'Pro' },
+              { n: '04', title: 'Estudio desde tus apuntes', desc: 'Subís tus PDFs o fotos de apuntes. Candil genera resúmenes, preguntas de práctica y mapas mentales desde lo que vos ya tenés.', pill: 'Pro' },
+            ].map((f, i) => (
+              <div key={f.n} className={`feat-card reveal${i > 0 ? ` reveal-delay-${i}` : ''}`}>
+                <div className="feat-num">{f.n}</div>
+                <h3 className="feat-title">{f.title}</h3>
+                <p className="feat-desc">{f.desc}</p>
+                <span className="feat-pill">{f.pill}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section
+        className="lp-section"
+        id="precios"
+        style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)', transition: 'background 500ms, border-color 400ms' }}
+      >
+        <div className="container">
+          <div className="reveal" style={{ textAlign: 'center' }}>
+            <h2 className="section-h2">Simple.<br/><em>Como tiene que ser.</em></h2>
+            <p className="section-p" style={{ marginTop: '1rem' }}>Empezá gratis. Pagá solo cuando necesitás más.</p>
+          </div>
+          <div className="pricing-grid">
+            {[
+              {
+                tier: 'Free', name: 'Gratis', amount: '$0', period: '/mes', featured: false,
+                desc: 'Para empezar. El plan que necesitás, sin pagar nada.',
+                features: ['Plan automático con IA', 'Plan visual tachable', 'Compartir plan como link', 'Recordatorios', '1 examen a la vez'],
+                btnClass: 'price-btn price-btn-ghost', btnText: 'Empezar gratis', href: '/registro',
+              },
+              {
+                tier: 'Más popular · Pro', name: 'Pro', amount: '$4.99', period: '/mes', featured: true,
+                desc: 'Personalización real y estudio desde tus propios apuntes.',
+                features: ['Todo lo de Free', 'Días y horarios personalizados', 'Ajuste por chat con IA', 'Subir apuntes (PDF, foto)', 'Preguntas de práctica', 'Simulacro de examen', 'Múltiples exámenes'],
+                btnClass: 'price-btn price-btn-solid', btnText: 'Empezar Pro', href: '/registro?plan=pro',
+              },
+              {
+                tier: 'Plus', name: 'Plus', amount: '$9.99', period: '/mes', featured: false,
+                desc: 'Social, colaborativo, sin límites.',
+                features: ['Todo lo de Pro', 'Audio resumen de tus apuntes', 'Mapa mental visual', 'Chat con tus apuntes', 'Modo compañero de estudio', 'Grupos de estudio', 'Google Calendar integrado'],
+                btnClass: 'price-btn price-btn-ghost', btnText: 'Empezar Plus', href: '/registro?plan=plus',
+              },
+            ].map((p, i) => (
+              <div key={p.name} className={`price-card${p.featured ? ' featured' : ''} reveal${i > 0 ? ` reveal-delay-${i}` : ''}`}>
+                <p className="price-tier">{p.tier}</p>
+                <h3 className="price-name">{p.name}</h3>
+                <div className="price-amount">{p.amount}<span>{p.period}</span></div>
+                <p className="price-desc">{p.desc}</p>
+                <div className="price-features">
+                  {p.features.map(f => <div key={f} className="price-feat">{f}</div>)}
+                </div>
+                <Link href={p.href} className={p.btnClass}>{p.btnText}</Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA FINAL ── */}
+      <section className="cta-final">
+        <div className="container-narrow">
+          <h2 className="cta-h2 reveal">¿Tenés un examen pronto?</h2>
+          <p className="cta-sub reveal reveal-delay-1">Armá tu plan ahora. En dos minutos sabés exactamente qué estudiar y cuándo.</p>
+          <div className="reveal reveal-delay-2">
+            <Link href="/registro" className="lp-btn" style={{ fontSize: '15px', padding: '16px 40px' }}>
+              Empezar gratis →
             </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-      </main>
-
-      <Footer />
+      {/* ── FOOTER ── */}
+      <footer className="lp-footer">
+        <div className="footer-logo">
+          <svg width="14" height="22" viewBox="0 0 14 22" fill="none" aria-hidden="true">
+            <path d="M7 1C7 1 12 6.5 12 10.5C12 13.6 9.8 16.5 7 16.5C4.2 16.5 2 13.6 2 10.5C2 6.5 7 1 7 1Z" fill="currentColor" opacity="0.4"/>
+            <rect x="4.5" y="16.5" width="5" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+          </svg>
+          Candil · 2026
+        </div>
+        <div className="footer-links">
+          <a href="#">Términos</a>
+          <a href="#">Privacidad</a>
+          <a href="#">Contacto</a>
+          <a href="#">Instagram</a>
+        </div>
+      </footer>
     </>
   )
 }
