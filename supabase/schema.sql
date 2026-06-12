@@ -107,3 +107,41 @@ CREATE POLICY "Users can CRUD own bloques" ON bloques FOR ALL
     JOIN examenes e ON p.examen_id = e.id
     WHERE e.user_id = auth.uid()
   ));
+
+-- ─────────────────────────────────────────────────────────────
+-- Migración: monetización (Stripe, límites de IA, apuntes)
+-- Ejecutar también en el SQL Editor si la base ya existía
+-- ─────────────────────────────────────────────────────────────
+
+-- Stripe + contador de generaciones de IA por mes
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ai_generations_this_month INTEGER DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ai_generations_reset_at TIMESTAMP WITH TIME ZONE;
+
+-- Bloques horarios personalizados (Pro) en disponibilidad
+ALTER TABLE disponibilidad ADD COLUMN IF NOT EXISTS bloques_horarios JSONB;
+
+-- Apuntes subidos (Pro/Plus)
+CREATE TABLE IF NOT EXISTS archivos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  examen_id UUID REFERENCES examenes(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  nombre TEXT NOT NULL,
+  tipo TEXT, -- 'pdf' | 'imagen'
+  storage_path TEXT NOT NULL,
+  tamanio_bytes BIGINT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE archivos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can CRUD own archivos" ON archivos FOR ALL USING (auth.uid() = user_id);
+
+-- Bucket privado para apuntes; cada usuario solo accede a su carpeta ({user_id}/...)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('apuntes', 'apuntes', false)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Users manage own apuntes" ON storage.objects FOR ALL
+  USING (bucket_id = 'apuntes' AND (storage.foldername(name))[1] = auth.uid()::text)
+  WITH CHECK (bucket_id = 'apuntes' AND (storage.foldername(name))[1] = auth.uid()::text);

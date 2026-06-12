@@ -112,7 +112,7 @@ export default function LandingPage() {
           <button className="theme-btn" onClick={toggleTheme} aria-label="Cambiar tema">
             {isLight ? '◑' : '☀︎'}
           </button>
-          <a href="#precios" className="nav-cta">Empezar gratis</a>
+          <Link href="/registro" className="nav-cta">Empezar gratis</Link>
         </div>
       </nav>
 

@@ -15,7 +15,8 @@
     "geist": "^1.3.0",
     "next": "^16.2.7",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "stripe": "^22.2.0"
   },
   "devDependencies": {
     "@types/node": "^20",

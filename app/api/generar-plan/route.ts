@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { checkGenerationLimit } from '@/lib/tierLimits'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -37,6 +38,14 @@ export async function POST(request: Request) {
     .single()
 
   if (!examen) return NextResponse.json({ error: 'Examen no encontrado' }, { status: 404 })
+
+  const check = await checkGenerationLimit(supabase, user.id)
+  if (!check.allowed) {
+    return NextResponse.json(
+      { error: `Llegaste al límite de ${check.limit} planes con IA este mes. Pasate a Pro para seguir generando.` },
+      { status: 429 }
+    )
+  }
 
   const prompt = `
 Materia: ${examen.materia}

@@ -1,541 +1,598 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { CandleIcon } from '@/components/CandleIcon'
+import UpgradeModal from '@/components/UpgradeModal'
 
-/* ── Types ─────────────────────────────────────────────────────────── */
-type Tema = {
-  id: string
-  nombre: string
-  ya_lo_se: boolean
-  peso: number | null
-}
+/* ── Types ── */
+type TipoExamen = 'multiple_choice' | 'oral' | 'desarrollo' | 'integrador'
+type Preferencia = 'manana' | 'tarde' | 'noche'
+type Tema = { id: string; nombre: string; yaloSe: boolean }
+type DiaDisp = { dia: string; diaNombre: string; horas: number; bloqueado: boolean; bloques: { inicio: string; fin: string }[] }
 
-type Disponibilidad = {
-  dia: string
-  horas: number
-  bloqueado: boolean
-}
-
-const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-
-const TIPOS_EXAMEN = [
-  { value: 'multiple_choice', label: 'Multiple choice', desc: 'Opciones predefinidas' },
-  { value: 'oral', label: 'Oral', desc: 'Con el docente' },
-  { value: 'desarrollo', label: 'Desarrollo', desc: 'Respuestas escritas' },
-  { value: 'integrador', label: 'Integrador', desc: 'Varios formatos' }
+/* ── Constants ── */
+const DIAS: { key: string; nombre: string }[] = [
+  { key: 'lunes', nombre: 'Lunes' },
+  { key: 'martes', nombre: 'Martes' },
+  { key: 'miércoles', nombre: 'Miércoles' },
+  { key: 'jueves', nombre: 'Jueves' },
+  { key: 'viernes', nombre: 'Viernes' },
+  { key: 'sábado', nombre: 'Sábado' },
+  { key: 'domingo', nombre: 'Domingo' },
 ]
 
-/* ── Step indicator ────────────────────────────────────────────────── */
-function StepBar({ step, total }: { step: number; total: number }) {
-  return (
-    <div style={{ marginBottom: 36 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: 3,
-            background: i < step ? 'var(--amber)' : 'var(--surface)',
-            borderRadius: 2,
-            marginRight: i < total - 1 ? 6 : 0,
-            transition: 'background 0.3s cubic-bezier(0.23,1,0.32,1)'
-          }} />
-        ))}
-      </div>
-      <p style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>
-        Paso {step} de {total}
-      </p>
-    </div>
-  )
+const TIPOS: { value: TipoExamen; icon: string; name: string; desc: string }[] = [
+  { value: 'multiple_choice', icon: '⊡', name: 'Multiple choice', desc: 'Opciones predefinidas, requiere reconocimiento' },
+  { value: 'oral', icon: '◎', name: 'Oral', desc: 'Explicar y defender conceptos en voz alta' },
+  { value: 'desarrollo', icon: '≡', name: 'Desarrollo escrito', desc: 'Redactar respuestas extensas y argumentadas' },
+  { value: 'integrador', icon: '⊕', name: 'Integrador', desc: 'Combina varios formatos y unidades' },
+]
+
+const PREFS: { value: Preferencia; icon: string; name: string }[] = [
+  { value: 'manana', icon: '🌅', name: 'Mañana' },
+  { value: 'tarde', icon: '☀️', name: 'Tarde' },
+  { value: 'noche', icon: '🌙', name: 'Noche' },
+]
+
+const PREF_NAMES: Record<Preferencia, string> = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' }
+const TIPO_NAMES: Record<TipoExamen, string> = {
+  multiple_choice: 'Multiple choice', oral: 'Oral',
+  desarrollo: 'Desarrollo escrito', integrador: 'Integrador',
 }
 
-/* ── Main wizard ───────────────────────────────────────────────────── */
+function formatFecha(f: string) {
+  if (!f) return '—'
+  const [y, m, d] = f.split('-')
+  const meses = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+  return `${parseInt(d)} de ${meses[parseInt(m)]} ${y}`
+}
+
+/* ── Main ── */
 export default function NuevoExamenPage() {
   const router = useRouter()
   const supabase = createClient()
 
   const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
   const [generando, setGenerando] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  // 'bloque': abierto desde "+ Bloque" (solo cerrar) · 'next': abierto desde "Siguiente" (ofrece continuar sin bloques)
+  const [modalCtx, setModalCtx] = useState<'bloque' | 'next'>('bloque')
+  const [userPlan, setUserPlan] = useState<string>('free')
+  const esPro = userPlan === 'pro' || userPlan === 'plus'
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('plan').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.plan) setUserPlan(data.plan) })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Step 1
   const [materia, setMateria] = useState('')
-  const [tipo, setTipo] = useState('')
-  const [fecha, setFecha] = useState('')
-  const [hora, setHora] = useState('')
+  const [tipos, setTipos] = useState<TipoExamen[]>([])
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
+  const [fecha, setFecha] = useState(tomorrow.toISOString().split('T')[0])
+  const [hora, setHora] = useState('09:00')
 
   // Step 2
   const [temas, setTemas] = useState<Tema[]>([])
   const [nuevoTema, setNuevoTema] = useState('')
+  const temaInputRef = useRef<HTMLInputElement>(null)
 
   // Step 3
-  const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>(
-    DIAS.map(dia => ({ dia, horas: 2, bloqueado: false }))
+  const [disponibilidad, setDisponibilidad] = useState<DiaDisp[]>(
+    DIAS.map(d => ({ dia: d.key, diaNombre: d.nombre, horas: d.key === 'sábado' || d.key === 'domingo' ? 4 : 2, bloqueado: false, bloques: [] }))
   )
-  const [preferencia, setPreferencia] = useState<'manana' | 'tarde' | 'noche'>('tarde')
+  const [preferencia, setPreferencia] = useState<Preferencia>('manana')
 
-  function agregarTema() {
-    if (!nuevoTema.trim()) return
-    setTemas(prev => [...prev, {
-      id: crypto.randomUUID(),
-      nombre: nuevoTema.trim(),
-      ya_lo_se: false,
-      peso: null
-    }])
-    setNuevoTema('')
+  /* ── Tipo toggle ── */
+  function toggleTipo(t: TipoExamen) {
+    setTipos(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   }
 
-  function removeTema(id: string) {
+  /* ── Temas ── */
+  function agregarTema() {
+    const nombre = nuevoTema.trim()
+    if (!nombre) return
+    setTemas(prev => [...prev, { id: crypto.randomUUID(), nombre, yaloSe: false }])
+    setNuevoTema('')
+    temaInputRef.current?.focus()
+  }
+
+  function deleteTema(id: string) {
     setTemas(prev => prev.filter(t => t.id !== id))
   }
 
-  function updateTema(id: string, field: Partial<Tema>) {
-    setTemas(prev => prev.map(t => t.id === id ? { ...t, ...field } : t))
+  function toggleYaLoSe(id: string) {
+    setTemas(prev => prev.map(t => t.id === id ? { ...t, yaloSe: !t.yaloSe } : t))
   }
 
-  function updateDia(dia: string, field: Partial<Disponibilidad>) {
+  /* ── Disponibilidad ── */
+  function updateDia(dia: string, field: Partial<DiaDisp>) {
     setDisponibilidad(prev => prev.map(d => d.dia === dia ? { ...d, ...field } : d))
   }
 
+  function toggleDia(dia: string) {
+    setDisponibilidad(prev => prev.map(d => d.dia === dia ? { ...d, bloqueado: !d.bloqueado } : d))
+  }
+
+  /* ── Bloques horarios (Pro) ── */
+  function handleAddBloque(dia: string) {
+    if (!esPro) {
+      setModalCtx('bloque')
+      setShowModal(true)
+      return
+    }
+    setDisponibilidad(prev => prev.map(d =>
+      d.dia === dia ? { ...d, bloques: [...d.bloques, { inicio: '09:00', fin: '11:00' }] } : d
+    ))
+  }
+
+  function updateBloque(dia: string, idx: number, campo: 'inicio' | 'fin', valor: string) {
+    setDisponibilidad(prev => prev.map(d =>
+      d.dia === dia ? { ...d, bloques: d.bloques.map((b, i) => i === idx ? { ...b, [campo]: valor } : b) } : d
+    ))
+  }
+
+  function removeBloque(dia: string, idx: number) {
+    setDisponibilidad(prev => prev.map(d =>
+      d.dia === dia ? { ...d, bloques: d.bloques.filter((_, i) => i !== idx) } : d
+    ))
+  }
+
+  /* ── Navigation ── */
+  function goTo(n: number) {
+    setStep(n)
+  }
+
+  function handleNext3() {
+    const hasProBloques = disponibilidad.some(d => d.bloques.length > 0)
+    if (hasProBloques && !esPro) {
+      setModalCtx('next')
+      setShowModal(true)
+      return
+    }
+    goTo(4)
+  }
+
+  function continuarSinPro() {
+    setShowModal(false)
+    if (modalCtx === 'next') {
+      setDisponibilidad(prev => prev.map(d => ({ ...d, bloques: [] })))
+      goTo(4)
+    }
+  }
+
+  /* ── Generate plan ── */
   async function handleGenerar() {
     setGenerando(true)
-
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Crear examen
       const { data: examen, error: examError } = await supabase
         .from('examenes')
         .insert({
           user_id: user.id,
           materia,
-          tipo,
+          tipo: tipos.join(', '),
           fecha,
           hora: hora || null,
           preferencia_horario: preferencia,
-          estado: 'activo'
+          estado: 'activo',
         })
         .select()
         .single()
 
       if (examError || !examen) throw examError
 
-      // Insertar temas
       if (temas.length > 0) {
         await supabase.from('temas').insert(
           temas.map((t, i) => ({
             examen_id: examen.id,
             nombre: t.nombre,
-            ya_lo_se: t.ya_lo_se,
-            peso: t.peso,
-            orden: i
+            ya_lo_se: t.yaloSe,
+            peso: null,
+            orden: i,
           }))
         )
       }
 
-      // Insertar disponibilidad
+      const hayBloques = esPro && disponibilidad.some(d => d.bloques.length > 0)
       await supabase.from('disponibilidad').insert(
         disponibilidad.map(d => ({
           examen_id: examen.id,
           dia: d.dia,
           horas: d.horas,
-          bloqueado: d.bloqueado
+          bloqueado: d.bloqueado,
+          ...(hayBloques ? { bloques_horarios: d.bloques } : {}),
         }))
       )
 
-      // Generar plan con IA
       const response = await fetch('/api/generar-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examenId: examen.id })
+        body: JSON.stringify({ examenId: examen.id }),
       })
 
-      if (!response.ok) throw new Error('Error generando plan')
-
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error ?? '')
+      }
       const { planId } = await response.json()
       router.push(`/plan/${planId}`)
-
-    } catch {
+    } catch (e) {
       setGenerando(false)
-      alert('Algo salió mal. Intentá de nuevo.')
+      alert(e instanceof Error && e.message ? e.message : 'Algo salió mal. Intentá de nuevo.')
     }
   }
 
-  const canNext1 = materia.trim() && tipo && fecha
-  const canNext2 = temas.length > 0
+  /* ── Resumen data ── */
+  const totalHoras = disponibilidad.filter(d => !d.bloqueado).reduce((s, d) => s + d.horas, 0)
+  const temasSabe = temas.filter(t => t.yaloSe).length
+  const temasEstudiar = temas.length - temasSabe
+  const tiposLabel = tipos.map(t => TIPO_NAMES[t]).join(' + ') || '—'
 
+  const resumenRows = [
+    ['Materia', materia || '—'],
+    ['Tipo', tiposLabel],
+    ['Examen', fecha ? `${formatFecha(fecha)} · ${hora}` : '—'],
+    ['Temas', temasEstudiar > 0
+      ? `${temasEstudiar} a estudiar${temasSabe ? ` · ${temasSabe} ya los sabés` : ''}`
+      : temas.length > 0 ? `${temasSabe} ya los sabés` : '—'],
+    ['Tiempo', `${totalHoras} hs disponibles · preferís la ${PREF_NAMES[preferencia].toLowerCase()}`],
+  ]
+
+  /* ── Loading state ── */
   if (generando) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
-        <div style={{ animation: 'candleSway 4s ease-in-out infinite', transformOrigin: 'bottom center' }}>
-          <svg width="60" height="90" viewBox="0 0 80 120" fill="none">
-            <defs>
-              <radialGradient id="gf" cx="50%" cy="75%" r="55%">
-                <stop offset="0%" stopColor="#F5C97A" />
-                <stop offset="45%" stopColor="#E8A44A" />
-                <stop offset="100%" stopColor="#C45E0A" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient id="if" cx="50%" cy="65%" r="45%">
-                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#F5C97A" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <path d="M40 8 C30 22 18 40 20 62 C22 74 30 84 40 90 C50 84 58 74 60 62 C62 40 50 22 40 8Z" fill="url(#gf)" className="flame-outer" />
-            <path d="M40 30 C35 40 31 52 33 64 C35 72 38 79 40 83 C42 79 45 72 47 64 C49 52 45 40 40 30Z" fill="url(#if)" className="flame-inner" />
-            <line x1="40" y1="83" x2="40" y2="92" stroke="#3D2B1F" strokeWidth="1.5" />
-            <rect x="26" y="91" width="28" height="26" rx="2" fill="#3D2B1F" />
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 0 }}>
+        <div style={{ animation: 'floatUp 3s ease-in-out infinite', filter: 'drop-shadow(0 0 20px rgba(232,164,74,0.4))', marginBottom: '1.5rem' }}>
+          <svg width="56" height="80" viewBox="0 0 56 80" fill="none" style={{ animation: 'flicker 2.5s ease-in-out infinite', transformOrigin: '50% 85%' }}>
+            <path d="M28 4C28 4 44 22 44 36C44 46 37.2 55 28 55C18.8 55 12 46 12 36C12 22 28 4 28 4Z" fill="#E8A44A" opacity="0.88"/>
+            <path d="M28 16C28 16 38 29 38 37C38 43 33.5 48 28 48C22.5 48 18 43 18 37C18 29 28 16 28 16Z" fill="#F5C97A"/>
+            <path d="M28 30C28 30 32 35 32 38C32 40.2 30.2 42 28 42C25.8 42 24 40.2 24 38C24 35 28 30 28 30Z" fill="white" opacity="0.5"/>
+            <rect x="21" y="55" width="14" height="18" rx="3" fill="#6B4226"/>
+            <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F"/>
           </svg>
         </div>
-        <h2 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.4rem' }}>
-          Candil está armando tu plan...
+        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', color: 'var(--ink)', marginBottom: '0.5rem' }}>
+          Candil está armando tu plan
+          <span style={{ display: 'inline-flex', gap: 4, marginLeft: 2 }}>
+            {[0, 0.2, 0.4].map((delay, i) => (
+              <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--amber)', animation: `flameDot 1.2s ease-in-out ${delay}s infinite`, opacity: 0.3, display: 'inline-block' }} />
+            ))}
+          </span>
         </h2>
-        <p style={{ color: 'var(--ink-soft)', fontSize: '0.92rem' }}>
-          Estamos distribuyendo los temas según tu tiempo.
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Distribuyendo temas, calculando tiempos, pensando en vos.</p>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Nav */}
-      <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/dashboard" style={{ color: 'var(--ink-muted)', textDecoration: 'none', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-          ← Volver
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)', display: 'flex', flexDirection: 'column', fontWeight: 300 }}>
+
+      {/* ── NAV ── */}
+      <nav style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 2rem', borderBottom: '0.5px solid var(--border)', flexShrink: 0, position: 'relative' }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
+          <CandleIcon size={14} /> Candil
         </Link>
-        <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--amber)', fontWeight: 700 }}>Candil</span>
-        <div style={{ width: 60 }} />
+
+        {/* Progress dots */}
+        <div style={{ display: 'flex', alignItems: 'center', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+          {[1, 2, 3, 4].map((n, i) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 500, border: '0.5px solid',
+                borderColor: step === n ? 'var(--amber)' : step > n ? 'var(--border-strong)' : 'var(--border-mid)',
+                background: step === n ? 'var(--amber)' : step > n ? 'var(--surface2)' : 'transparent',
+                color: step === n ? 'var(--bg)' : step > n ? 'var(--amber)' : 'var(--ink-muted)',
+                transition: 'all 250ms var(--ease-out)', zIndex: 1,
+              }}>{n}</div>
+              {i < 3 && (
+                <div style={{ width: 40, height: 0.5, background: step > n ? 'var(--border-strong)' : 'var(--border-mid)', transition: 'background 300ms var(--ease-out)' }} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Link href="/dashboard" style={{ fontSize: 12, color: 'var(--ink-muted)', textDecoration: 'none', letterSpacing: '0.04em', marginLeft: 'auto', transition: 'color 200ms' }}>
+          Cancelar
+        </Link>
       </nav>
 
-      <main style={{ maxWidth: 580, margin: '0 auto', padding: '48px 24px' }}>
+      {/* ── MAIN ── */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1.5rem' }}>
+        <div style={{ width: '100%', maxWidth: 560, animation: 'stepIn 350ms var(--ease-out) forwards' }} key={step}>
 
-        <StepBar step={step} total={4} />
+          {/* ── PASO 1 ── */}
+          {step === 1 && (
+            <>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 1 de 4</p>
+              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+                ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>rendir?</em>
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Contanos de qué se trata el examen.</p>
 
-        {/* ── STEP 1: Examen ───────────────────────────────────────── */}
-        {step === 1 && (
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.6rem', marginBottom: 6 }}>
-              El examen
-            </h1>
-            <p style={{ color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 32 }}>
-              Contanos de qué se trata.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
-                  Nombre de la materia
-                </label>
-                <input
-                  className="input"
-                  value={materia}
-                  onChange={e => setMateria(e.target.value)}
-                  placeholder="Ej: Cálculo I, Historia del Arte..."
-                />
+              {/* Materia */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Materia</label>
+                <input className="input" value={materia} onChange={e => setMateria(e.target.value)} placeholder="Ej: Fisiología, Derecho Civil, Cálculo II" />
               </div>
 
-              <div>
-                <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 10 }}>
-                  Tipo de examen
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {TIPOS_EXAMEN.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTipo(t.value)}
-                      style={{
-                        padding: '14px 16px',
-                        background: tipo === t.value ? 'rgba(232,164,74,0.15)' : 'var(--bg2)',
-                        border: `0.5px solid ${tipo === t.value ? 'var(--amber)' : 'var(--border)'}`,
-                        borderRadius: 8,
-                        color: tipo === t.value ? 'var(--amber)' : 'var(--ink-soft)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2 }}>{t.label}</p>
-                      <p style={{ fontSize: '0.78rem', opacity: 0.7 }}>{t.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 14 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
-                    Fecha del examen
-                  </label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={fecha}
-                    onChange={e => setFecha(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
-                    Hora (opcional)
-                  </label>
-                  <input
-                    type="time"
-                    className="input"
-                    value={hora}
-                    onChange={e => setHora(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: Temas ────────────────────────────────────────── */}
-        {step === 2 && (
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.6rem', marginBottom: 6 }}>
-              El contenido
-            </h1>
-            <p style={{ color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 32 }}>
-              ¿Qué temas entran en el examen?
-            </p>
-
-            {/* Add tema */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-              <input
-                className="input"
-                value={nuevoTema}
-                onChange={e => setNuevoTema(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && agregarTema()}
-                placeholder="Nombre del tema..."
-              />
-              <button
-                onClick={agregarTema}
-                className="btn-primary"
-                style={{ flexShrink: 0, padding: '11px 20px' }}
-                disabled={!nuevoTema.trim()}
-              >
-                Agregar
-              </button>
-            </div>
-
-            {/* Temas list */}
-            {temas.length === 0 ? (
-              <p style={{ color: 'var(--ink-muted)', fontSize: '0.88rem', textAlign: 'center', padding: '24px 0' }}>
-                Agregá al menos un tema para continuar.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {temas.map(tema => (
-                  <div key={tema.id} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        className="check-block"
-                        checked={tema.ya_lo_se}
-                        onChange={e => updateTema(tema.id, { ya_lo_se: e.target.checked })}
-                      />
-                      <span style={{ color: 'var(--ink)', fontSize: '0.92rem', textDecoration: tema.ya_lo_se ? 'line-through' : 'none', opacity: tema.ya_lo_se ? 0.5 : 1 }}>
-                        {tema.nombre}
-                      </span>
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        type="number"
-                        value={tema.peso ?? ''}
-                        onChange={e => updateTema(tema.id, { peso: e.target.value ? Number(e.target.value) : null })}
-                        placeholder="Peso %"
-                        min={0}
-                        max={100}
-                        style={{ width: 76, padding: '6px 10px', background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 6, color: 'var(--ink)', fontSize: '0.82rem', outline: 'none' }}
-                      />
-                      <button
-                        onClick={() => removeTema(tema.id)}
-                        style={{ color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', fontSize: '1.1rem', lineHeight: 1, opacity: 0.6 }}
+              {/* Tipo */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Tipo de examen</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: '0.5rem' }}>
+                  {TIPOS.map(t => {
+                    const sel = tipos.includes(t.value)
+                    return (
+                      <button key={t.value} onClick={() => toggleTipo(t.value)}
+                        style={{
+                          border: `0.5px solid ${sel ? 'var(--border-strong)' : 'var(--border-mid)'}`,
+                          borderRadius: 10, padding: '16px 14px',
+                          cursor: 'pointer', background: sel ? 'var(--surface2)' : 'var(--surface)',
+                          textAlign: 'left', position: 'relative', overflow: 'hidden',
+                          transition: 'border-color 200ms var(--ease-out), background 200ms, transform 150ms var(--ease-out)',
+                          userSelect: 'none',
+                        }}
+                        onMouseEnter={e => { if (!sel) e.currentTarget.style.borderColor = 'var(--border-strong)' }}
+                        onMouseLeave={e => { if (!sel) e.currentTarget.style.borderColor = 'var(--border-mid)' }}
                       >
+                        {/* Checkmark */}
+                        <div style={{
+                          position: 'absolute', top: 10, right: 10, width: 16, height: 16, borderRadius: 4,
+                          border: `0.5px solid ${sel ? 'var(--amber)' : 'var(--border-mid)'}`,
+                          background: sel ? 'var(--amber)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 200ms var(--ease-out)',
+                        }}>
+                          {sel && <span style={{ display: 'block', width: 7, height: 4, borderLeft: '1.5px solid #150F07', borderBottom: '1.5px solid #150F07', transform: 'rotate(-45deg) translateY(-1px)' }} />}
+                        </div>
+                        <span style={{ fontSize: 18, marginBottom: 8, display: 'block' }}>{t.icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', display: 'block', marginBottom: 3 }}>{t.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{t.desc}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Podés seleccionar más de uno.</p>
+              </div>
+
+              {/* Fecha + Hora */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Fecha del examen</label>
+                  <input className="input" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Hora</label>
+                  <input className="input" type="time" value={hora} onChange={e => setHora(e.target.value)} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
+                <span />
+                <button onClick={() => goTo(2)} disabled={!materia.trim() || !fecha}
+                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: !materia.trim() || !fecha ? 'not-allowed' : 'pointer', opacity: !materia.trim() || !fecha ? 0.5 : 1, transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
+                  Siguiente →
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── PASO 2 ── */}
+          {step === 2 && (
+            <>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 2 de 4</p>
+              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+                ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Agregá los temas uno por uno. Marcá los que ya sabés.</p>
+
+              {/* Add tema */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: '1rem' }}>
+                <input ref={temaInputRef} className="input" style={{ flex: 1 }} value={nuevoTema} onChange={e => setNuevoTema(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarTema()} placeholder="Nombre del tema" />
+                <button onClick={agregarTema}
+                  style={{ padding: '12px 16px', borderRadius: 8, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', fontSize: 13, cursor: 'pointer', transition: 'all 200ms var(--ease-out)', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+                  + Agregar
+                </button>
+              </div>
+
+              {/* Temas list or empty */}
+              {temas.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, color: 'var(--ink-faint)', fontSize: 13, marginBottom: '1.25rem' }}>
+                  Todavía no agregaste temas.<br />Empezá por el primero.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '1.25rem', maxHeight: 260, overflowY: 'auto' }}>
+                  {temas.map((tema, i) => (
+                    <div key={tema.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--surface)', border: '0.5px solid var(--border)', animation: 'itemIn 250ms var(--ease-out) forwards' }}>
+                      <span style={{ color: 'var(--ink-faint)', fontSize: 14, flexShrink: 0 }}>⠿</span>
+                      <span style={{ flex: 1, fontSize: 13, color: 'var(--ink)' }}>{tema.nombre}</span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }} onClick={e => e.stopPropagation()}>
+                        <input type="checkbox" checked={tema.yaloSe} onChange={() => toggleYaLoSe(tema.id)}
+                          style={{ width: 14, height: 14, borderRadius: 3, border: '0.5px solid var(--border-mid)', background: 'transparent', cursor: 'pointer', accentColor: 'var(--amber)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>Ya lo sé</span>
+                      </label>
+                      <button onClick={() => deleteTema(tema.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 18, padding: '0 2px', lineHeight: 1, fontFamily: 'monospace', flexShrink: 0 }}>
                         ×
                       </button>
                     </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
+                <button onClick={() => goTo(1)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <button onClick={() => goTo(3)} disabled={temas.length === 0}
+                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: temas.length === 0 ? 'not-allowed' : 'pointer', opacity: temas.length === 0 ? 0.5 : 1, transition: 'background 200ms' }}>
+                  Siguiente →
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── PASO 3 ── */}
+          {step === 3 && (
+            <>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 3 de 4</p>
+              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+                ¿Cuándo podés<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Indicá cuántas horas disponés por día.</p>
+
+              {/* Days */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1.5rem' }}>
+                {disponibilidad.map(d => (
+                  <div key={d.dia} style={{
+                    background: 'var(--surface)', border: '0.5px solid var(--border)',
+                    borderRadius: 10, overflow: 'hidden',
+                    opacity: d.bloqueado ? 0.4 : 1, transition: 'opacity 200ms, border-color 200ms',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' }}>
+                      <span style={{ fontSize: 13, color: 'var(--ink-soft)', width: 82, flexShrink: 0 }}>{d.diaNombre}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                        <input type="number" min={0} max={16} value={d.horas} disabled={d.bloqueado}
+                          onChange={e => updateDia(d.dia, { horas: parseFloat(e.target.value) || 0 })}
+                          style={{ width: 44, padding: '5px 6px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 13, textAlign: 'center', fontFamily: 'inherit', outline: 'none', WebkitAppearance: 'none' }} />
+                        <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>hs</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+                        {/* PRO bloque button */}
+                        <button onClick={() => handleAddBloque(d.dia)} disabled={d.bloqueado}
+                          style={{ fontSize: 11, color: 'var(--amber)', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '3px 10px', cursor: d.bloqueado ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                          + Bloque
+                        </button>
+                        {!esPro && (
+                          <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
+                        )}
+                        {/* Toggle bloqueado */}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                          <button onClick={() => toggleDia(d.dia)}
+                            style={{
+                              width: 30, height: 17, borderRadius: 100,
+                              background: d.bloqueado ? 'rgba(232,164,74,0.25)' : 'var(--border-mid)',
+                              border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms var(--ease-out)', flexShrink: 0, padding: 0,
+                            }}>
+                            <span style={{
+                              position: 'absolute', top: 2.5, left: 2.5,
+                              width: 12, height: 12, borderRadius: '50%',
+                              background: d.bloqueado ? 'var(--amber)' : 'var(--ink-muted)',
+                              transform: d.bloqueado ? 'translateX(13px)' : 'translateX(0)',
+                              transition: 'transform 200ms var(--ease-out), background 200ms',
+                              display: 'block',
+                            }} />
+                          </button>
+                          <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>No puedo</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Bloques horarios (Pro) */}
+                    {d.bloques.length > 0 && !d.bloqueado && (
+                      <div style={{ padding: '0 14px 11px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {d.bloques.map((b, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--amber-dim)', border: '0.5px solid var(--border)', animation: 'itemIn 250ms var(--ease-out) forwards' }}>
+                            <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, flexShrink: 0 }}>Bloque</span>
+                            <input type="time" value={b.inicio} onChange={e => updateBloque(d.dia, idx, 'inicio', e.target.value)}
+                              style={{ padding: '4px 8px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
+                            <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>–</span>
+                            <input type="time" value={b.fin} onChange={e => updateBloque(d.dia, idx, 'fin', e.target.value)}
+                              style={{ padding: '4px 8px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
+                            <button onClick={() => removeBloque(d.dia, idx)}
+                              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px', fontFamily: 'monospace' }}>
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
 
-            {temas.some(t => t.ya_lo_se) && (
-              <p style={{ marginTop: 12, color: 'var(--ink-muted)', fontSize: '0.82rem' }}>
-                Los temas marcados solo necesitarán un repaso breve al final.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* ── STEP 3: Disponibilidad ───────────────────────────────── */}
-        {step === 3 && (
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.6rem', marginBottom: 6 }}>
-              Tu tiempo disponible
-            </h1>
-            <p style={{ color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 32 }}>
-              Cuántas horas podés estudiar cada día.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-              {disponibilidad.map(d => (
-                <div key={d.dia} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <span style={{
-                    width: 90, color: d.bloqueado ? 'var(--ink-muted)' : 'var(--ink)',
-                    fontSize: '0.9rem', textTransform: 'capitalize', opacity: d.bloqueado ? 0.5 : 1
-                  }}>
-                    {d.dia}
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={12}
-                    value={d.horas}
-                    disabled={d.bloqueado}
-                    onChange={e => updateDia(d.dia, { horas: Number(e.target.value) })}
-                    style={{ flex: 1, accentColor: 'var(--amber)', opacity: d.bloqueado ? 0.3 : 1 }}
-                  />
-                  <span style={{ width: 32, textAlign: 'right', color: d.bloqueado ? 'var(--ink-muted)' : 'var(--amber)', fontSize: '0.88rem', fontWeight: 500 }}>
-                    {d.bloqueado ? '–' : `${d.horas}h`}
-                  </span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.78rem', color: 'var(--ink-muted)', whiteSpace: 'nowrap' }}>
-                    <input
-                      type="checkbox"
-                      checked={d.bloqueado}
-                      onChange={e => updateDia(d.dia, { bloqueado: e.target.checked })}
-                      style={{ accentColor: 'var(--amber)' }}
-                    />
-                    No puedo
-                  </label>
+              {/* Preferencia */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>¿En qué momento del día rendís mejor?</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {PREFS.map(p => {
+                    const sel = preferencia === p.value
+                    return (
+                      <button key={p.value} onClick={() => setPreferencia(p.value)}
+                        style={{
+                          border: `0.5px solid ${sel ? 'var(--border-strong)' : 'var(--border-mid)'}`,
+                          borderRadius: 8, padding: '14px 10px', textAlign: 'center',
+                          cursor: 'pointer', background: sel ? 'var(--surface2)' : 'var(--surface)',
+                          transition: 'all 200ms var(--ease-out)',
+                        }}>
+                        <span style={{ fontSize: 20, marginBottom: 6, display: 'block' }}>{p.icon}</span>
+                        <span style={{ fontSize: 12, color: sel ? 'var(--amber)' : 'var(--ink-soft)' }}>{p.name}</span>
+                      </button>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div>
-              <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 10 }}>
-                ¿Cuándo preferís estudiar?
-              </label>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {(['manana', 'tarde', 'noche'] as const).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => setPreferencia(p)}
-                    style={{
-                      flex: 1, padding: '12px',
-                      background: preferencia === p ? 'rgba(232,164,74,0.15)' : 'var(--bg2)',
-                      border: `0.5px solid ${preferencia === p ? 'var(--amber)' : 'var(--border)'}`,
-                      borderRadius: 8, color: preferencia === p ? 'var(--amber)' : 'var(--ink-soft)',
-                      cursor: 'pointer', fontSize: '0.88rem', fontWeight: 500, transition: 'all 0.2s'
-                    }}
-                  >
-                    {p === 'manana' ? '☀️ Mañana' : p === 'tarde' ? '🌤 Tarde' : '🌙 Noche'}
-                  </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
+                <button onClick={() => goTo(2)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <button onClick={handleNext3}
+                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms' }}>
+                  Siguiente →
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── PASO 4 ── */}
+          {step === 4 && (
+            <>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 4 de 4</p>
+              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+                Todo<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>listo.</em>
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Revisá el resumen y generá tu plan.</p>
+
+              {/* Resumen grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '2rem' }}>
+                {resumenRows.map(([label, val], i) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 12, padding: '12px 16px', borderRadius: 8, background: 'var(--surface)', border: '0.5px solid var(--border)', animation: `itemIn 300ms var(--ease-out) ${i * 60}ms both` }}>
+                    <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)', width: 90, flexShrink: 0 }}>{label}</span>
+                    <span style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: val }} />
+                  </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* ── STEP 4: Confirmación ─────────────────────────────────── */}
-        {step === 4 && (
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.6rem', marginBottom: 6 }}>
-              Todo listo.
-            </h1>
-            <p style={{ color: 'var(--ink-soft)', fontSize: '0.92rem', marginBottom: 32 }}>
-              Revisá los datos antes de generar tu plan.
-            </p>
+              <button onClick={handleGenerar}
+                style={{ width: '100%', fontFamily: 'var(--font-serif), serif', fontSize: '1rem', fontStyle: 'italic', padding: '16px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
+                Generar mi plan →
+              </button>
 
-            {/* Summary card */}
-            <div className="card" style={{ padding: '22px', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Materia</p>
-                <p style={{ color: 'var(--ink)', fontWeight: 600 }}>{materia}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                <button onClick={() => goTo(3)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <span />
               </div>
-              <hr className="divider" />
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                <div>
-                  <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Tipo</p>
-                  <p style={{ color: 'var(--ink)', fontSize: '0.9rem' }}>{TIPOS_EXAMEN.find(t => t.value === tipo)?.label}</p>
-                </div>
-                <div>
-                  <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Fecha</p>
-                  <p style={{ color: 'var(--ink)', fontSize: '0.9rem' }}>{new Date(fecha).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                </div>
-                <div>
-                  <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Preferencia</p>
-                  <p style={{ color: 'var(--ink)', fontSize: '0.9rem', textTransform: 'capitalize' }}>{preferencia === 'manana' ? 'Mañana' : preferencia === 'tarde' ? 'Tarde' : 'Noche'}</p>
-                </div>
-              </div>
-              <hr className="divider" />
-              <div>
-                <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Temas ({temas.length})</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {temas.map(t => (
-                    <span key={t.id} style={{ fontSize: '0.82rem', padding: '3px 10px', background: t.ya_lo_se ? 'var(--bg)' : 'rgba(232,164,74,0.1)', border: '0.5px solid var(--border)', borderRadius: 4, color: t.ya_lo_se ? 'var(--ink-muted)' : 'var(--ink-soft)', textDecoration: t.ya_lo_se ? 'line-through' : 'none' }}>
-                      {t.nombre}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <hr className="divider" />
-              <div>
-                <p style={{ color: 'var(--ink-muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Horas disponibles</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {disponibilidad.filter(d => !d.bloqueado && d.horas > 0).map(d => (
-                    <span key={d.dia} style={{ fontSize: '0.82rem', padding: '3px 10px', background: 'rgba(232,164,74,0.1)', border: '0.5px solid var(--border)', borderRadius: 4, color: 'var(--ink-soft)', textTransform: 'capitalize' }}>
-                      {d.dia} {d.horas}h
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleGenerar}
-              disabled={loading || generando}
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', fontSize: '1.05rem', padding: '14px' }}
-            >
-              Generar mi plan
-            </button>
-            <p style={{ textAlign: 'center', color: 'var(--ink-muted)', fontSize: '0.82rem', marginTop: 10 }}>
-              Esto puede tomar unos segundos.
-            </p>
-          </div>
-        )}
-
-        {/* ── Navigation buttons ───────────────────────────────────── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
-          {step > 1 ? (
-            <button
-              onClick={() => setStep(s => s - 1)}
-              className="btn-secondary"
-            >
-              ← Anterior
-            </button>
-          ) : <div />}
-
-          {step < 4 && (
-            <button
-              onClick={() => setStep(s => s + 1)}
-              className="btn-primary"
-              disabled={
-                (step === 1 && !canNext1) ||
-                (step === 2 && !canNext2)
-              }
-            >
-              Siguiente →
-            </button>
+            </>
           )}
         </div>
-
       </main>
+
+      {/* ── UPGRADE MODAL ── */}
+      {showModal && (
+        <UpgradeModal
+          descripcion="Los bloques horarios personalizados te permiten decirle a Candil exactamente cuándo podés estudiar cada día."
+          onClose={() => setShowModal(false)}
+          onContinueFree={continuarSinPro}
+          continueLabel={modalCtx === 'next' ? 'Continuar sin bloques' : 'Continuar con Free'}
+        />
+      )}
     </div>
   )
 }
