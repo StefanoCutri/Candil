@@ -204,7 +204,7 @@ export default function NuevoExamenPage() {
       }
 
       const hayBloques = esPro && disponibilidad.some(d => d.bloques.length > 0)
-      await supabase.from('disponibilidad').insert(
+      const { error: dispError } = await supabase.from('disponibilidad').insert(
         disponibilidad.map(d => ({
           examen_id: examen.id,
           dia: d.dia,
@@ -213,6 +213,7 @@ export default function NuevoExamenPage() {
           ...(hayBloques ? { bloques_horarios: d.bloques } : {}),
         }))
       )
+      if (dispError) throw dispError
 
       const response = await fetch('/api/generar-plan', {
         method: 'POST',
@@ -228,7 +229,12 @@ export default function NuevoExamenPage() {
       router.push(`/plan/${planId}`)
     } catch (e) {
       setGenerando(false)
-      alert(e instanceof Error && e.message ? e.message : 'Algo salió mal. Intentá de nuevo.')
+      console.error('[nuevo] Error generando plan:', e)
+      // Los errores de Supabase (PostgrestError) no son instanceof Error pero traen .message
+      const msg = e instanceof Error ? e.message
+        : (e && typeof e === 'object' && 'message' in e) ? String((e as { message: unknown }).message)
+        : ''
+      alert(msg || 'Algo salió mal. Intentá de nuevo.')
     }
   }
 

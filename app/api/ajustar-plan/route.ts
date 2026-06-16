@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   ]
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 2048,
     system: `Sos Candil, asistente de estudio. El usuario tiene un plan de estudio para "${(plan.examenes as unknown as { materia: string })?.materia}" y quiere modificarlo.
 
