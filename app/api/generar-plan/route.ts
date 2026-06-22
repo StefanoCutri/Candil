@@ -142,7 +142,7 @@ Reglas:
         name: e.name,
         message: e.message,
         error: e.error,
-        requestId: e.requestID,
+        requestId: e.request_id,
         headers: e.headers,
         apiKeyPresente: Boolean(process.env.ANTHROPIC_API_KEY),
       })
