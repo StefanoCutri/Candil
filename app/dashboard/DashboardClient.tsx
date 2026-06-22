@@ -270,11 +270,16 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
           <CandleIcon size={14} />
           <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
-        <form action="/auth/signout" method="post">
-          <button style={{ color: 'var(--ink-muted)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms' }}>
-            Salir
-          </button>
-        </form>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <Link href="/perfil" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
+            Mi perfil
+          </Link>
+          <form action="/auth/signout" method="post">
+            <button style={{ color: 'var(--ink-muted)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms' }}>
+              Salir
+            </button>
+          </form>
+        </div>
       </nav>
 
       <main style={{ maxWidth: 920, margin: '0 auto', padding: '48px 24px 120px' }}>

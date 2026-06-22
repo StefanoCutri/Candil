@@ -193,6 +193,11 @@ export default function PlanPage() {
     setBloques(next)
     await supabase.from('bloques').update({ completado: nuevo }).eq('id', bloqueId)
 
+    // Al completar un bloque, registrar actividad del día para la racha (best-effort)
+    if (nuevo) {
+      fetch('/api/update-racha', { method: 'POST' }).catch(() => {})
+    }
+
     // Update progress message
     const sinPausa = next.filter(b => b.tipo !== 'pausa')
     const done = sinPausa.filter(b => b.completado).length
