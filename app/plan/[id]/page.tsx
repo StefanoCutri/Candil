@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Pomodoro from '@/components/Pomodoro'
 import AjustePanel from '@/components/AjustePanel'
 import ApuntesSection from '@/components/ApuntesSection'
+import PracticaSection from '@/components/PracticaSection'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
 
@@ -477,6 +478,12 @@ export default function PlanPage() {
 
         {/* ── APUNTES (Pro) ── */}
         <ApuntesSection
+          examenId={plan.examen_id}
+          esPro={esPro}
+          onLocked={() => setShowUpgrade(true)}
+        />
+
+        <PracticaSection
           examenId={plan.examen_id}
           esPro={esPro}
           onLocked={() => setShowUpgrade(true)}
