@@ -271,6 +271,9 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
           <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <Link href="/grupos" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
+            Grupos
+          </Link>
           <Link href="/perfil" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
             Mi perfil
           </Link>

@@ -8,6 +8,7 @@ import Pomodoro from '@/components/Pomodoro'
 import AjustePanel from '@/components/AjustePanel'
 import ApuntesSection from '@/components/ApuntesSection'
 import PracticaSection from '@/components/PracticaSection'
+import PlusSection from '@/components/PlusSection'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
 
@@ -134,6 +135,7 @@ export default function PlanPage() {
   const [motivMsg, setMotivMsg] = useState('')
   const [toast, setToast] = useState(false)
   const [esPro, setEsPro] = useState(false)
+  const [esPlus, setEsPlus] = useState(false)
   const [ajusteOpen, setAjusteOpen] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [flashKeys, setFlashKeys] = useState<Set<string>>(new Set())
@@ -148,6 +150,7 @@ export default function PlanPage() {
           .eq('id', user.id)
           .single()
         setEsPro(profile?.plan === 'pro' || profile?.plan === 'plus')
+        setEsPlus(profile?.plan === 'plus')
       }
 
       const { data: planData } = await supabase
@@ -486,6 +489,12 @@ export default function PlanPage() {
         <PracticaSection
           examenId={plan.examen_id}
           esPro={esPro}
+          onLocked={() => setShowUpgrade(true)}
+        />
+
+        <PlusSection
+          examenId={plan.examen_id}
+          esPlus={esPlus}
           onLocked={() => setShowUpgrade(true)}
         />
       </div>
