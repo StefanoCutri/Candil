@@ -9,6 +9,15 @@ const MAX_ARCHIVOS = 5
 const MAX_BYTES = 12 * 1024 * 1024 // tope total para no reventar el contexto
 
 export async function POST(request: Request) {
+  try {
+    return await handler(request)
+  } catch (e) {
+    console.error('[chat-apuntes] Error no manejado:', e)
+    return NextResponse.json({ error: 'Algo salió mal leyendo tus apuntes. Intentá de nuevo.' }, { status: 500 })
+  }
+}
+
+async function handler(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,8 +53,9 @@ export async function POST(request: Request) {
     .order('created_at', { ascending: false })
     .limit(MAX_ARCHIVOS)
 
+  console.log('[chat-apuntes] Apuntes encontrados para examen', examenId, ':', archivos?.length ?? 0)
   if (!archivos || archivos.length === 0) {
-    return NextResponse.json({ error: 'Subí al menos un apunte para poder charlar sobre él.' }, { status: 400 })
+    return NextResponse.json({ error: 'Subí apuntes primero para poder chatear con ellos.' }, { status: 400 })
   }
 
   // Descargar y convertir a bloques solo en el primer turno (cuando no hay historial)

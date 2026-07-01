@@ -7,6 +7,15 @@ import { cookies } from 'next/headers'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request: Request) {
+  try {
+    return await handler(request)
+  } catch (e) {
+    console.error('[mapa-mental] Error no manejado:', e)
+    return NextResponse.json({ error: 'Error interno armando el mapa.' }, { status: 500 })
+  }
+}
+
+async function handler(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,6 +50,8 @@ export async function POST(request: Request) {
   const temas = (examen.temas ?? []) as { nombre: string }[]
   if (temas.length === 0) return NextResponse.json({ error: 'Este examen no tiene temas.' }, { status: 400 })
 
+  console.log('[mapa-mental] Materia:', examen.materia, '· Temas reales:', temas.map(t => t.nombre))
+
   let message: Anthropic.Message
   try {
     message = await anthropic.messages.create({
@@ -66,9 +77,11 @@ Reglas: una rama por tema importante. 2 a 5 nodos por rama, conceptos cortos (1-
 
   const raw = (message.content[0] as { text: string }).text
     .replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
+  console.log('[mapa-mental] Respuesta IA:', { stopReason: message.stop_reason, largo: raw.length, raw })
   try {
     return NextResponse.json({ mapa: JSON.parse(raw) })
-  } catch {
+  } catch (e) {
+    console.error('[mapa-mental] No pude parsear el JSON de la IA:', e, '· raw:', raw.slice(0, 400))
     return NextResponse.json({ error: 'No pude armar el mapa, intentá de nuevo.' }, { status: 500 })
   }
 }

@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS bloques (
   hora_fin TIME,
   tema TEXT,
   tipo TEXT,
+  descripcion TEXT,
+  duracion_minutos INTEGER,
   completado BOOLEAN DEFAULT FALSE,
   orden INTEGER
 );

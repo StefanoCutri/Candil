@@ -190,12 +190,22 @@ export default function PlanPage() {
 
   async function toggleBloque(bloqueId: string, diIdx: number) {
     const actual = bloques.find(b => b.id === bloqueId)
-    if (!actual) return
+    if (!actual) {
+      console.warn('[plan] toggleBloque: no encontré el bloque en state', { bloqueId })
+      return
+    }
     const nuevo = !actual.completado
+    console.log('[plan] toggleBloque', { bloqueId, tema: actual.tema, completado: nuevo })
 
     const next = bloques.map(b => b.id === bloqueId ? { ...b, completado: nuevo } : b)
     setBloques(next)
-    await supabase.from('bloques').update({ completado: nuevo }).eq('id', bloqueId)
+    const { error: updError } = await supabase.from('bloques').update({ completado: nuevo }).eq('id', bloqueId)
+    if (updError) {
+      // Revertir el optimismo si el UPDATE no entró (p. ej. RLS)
+      console.error('[plan] Error actualizando bloque en Supabase:', updError)
+      setBloques(bloques)
+      return
+    }
 
     // Al completar un bloque, registrar actividad del día para la racha (best-effort)
     if (nuevo) {
@@ -414,7 +424,18 @@ export default function PlanPage() {
                   return (
                     <div
                       key={bi}
-                      onClick={() => bloqueDb && toggleBloque(bloqueDb.id, di)}
+                      onClick={() => {
+                        if (!bloqueDb) {
+                          console.warn('[plan] Click sin match en DB — el bloque del contenido no encontró su fila en "bloques".', {
+                            fecha: dia.fecha,
+                            hora_inicio: bloque.hora_inicio,
+                            tema: bloque.tema,
+                            bloquesEnEseDia: bloquesDb.map(b => ({ hora: b.hora_inicio, tema: b.tema })),
+                          })
+                          return
+                        }
+                        toggleBloque(bloqueDb.id, di)
+                      }}
                       style={{
                         display: 'flex', alignItems: 'stretch',
                         borderRadius: 10, border: `0.5px solid ${flash ? 'var(--border-strong)' : tipo === 'pausa' ? 'var(--border-mid)' : 'var(--border)'}`,
@@ -453,7 +474,7 @@ export default function PlanPage() {
                           <span style={{ fontSize: 11, color: 'var(--ink-muted)', letterSpacing: '0.04em', flexShrink: 0 }}>
                             {bloque.hora_inicio}–{bloque.hora_fin}
                           </span>
-                          <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1, textDecoration: done ? 'line-through' : 'none', textDecorationColor: 'var(--ink-faint)' }}>
+                          <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1, textDecorationLine: done ? 'line-through' : 'none', textDecorationColor: 'var(--ink-faint)' }}>
                             {bloque.tema}
                           </span>
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: TAG_BG[tipo] || TAG_BG.estudio, color: TAG_COLOR[tipo] || TAG_COLOR.estudio, flexShrink: 0 }}>

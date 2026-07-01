@@ -59,6 +59,8 @@ async function generarPlan(request: Request) {
     return NextResponse.json({ error: 'Examen no encontrado' }, { status: 404 })
   }
 
+  console.log('[generar-plan] Temas encontrados para examen', examenId, ':', (examen.temas ?? []).length)
+
   const check = await checkGenerationLimit(supabase, user.id)
   if (!check.allowed) {
     return NextResponse.json(
@@ -194,8 +196,20 @@ Reglas:
 
   const planParsed = planData as { dias?: unknown[] }
   if (!planParsed.dias || planParsed.dias.length === 0) {
+    const temasCount = (examen.temas ?? []).length
+    console.error('[generar-plan] Plan sin días.', {
+      temasEnDB: temasCount,
+      stopReason: message.stop_reason,
+      planRecibido: planData,
+    })
+    // Distinguimos: si no hay temas en la DB es un problema de carga; si los hay,
+    // el plan vino vacío desde la IA y no es culpa del usuario.
     return NextResponse.json(
-      { error: 'No hay temas cargados. Agregá temas en el paso 2 del wizard.' },
+      {
+        error: temasCount === 0
+          ? 'No hay temas cargados. Agregá temas en el paso 2 del wizard.'
+          : 'No pude armar el plan esta vez. Probá generarlo de nuevo.',
+      },
       { status: 400 }
     )
   }
@@ -217,7 +231,7 @@ Reglas:
     return NextResponse.json({ error: 'Error guardando plan' }, { status: 500 })
   }
 
-  const planTyped = planData as { dias?: { fecha: string; dia_nombre: string; bloques?: { hora_inicio: string; hora_fin: string; tema: string; tipo: string; duracion_minutos: number }[] }[] }
+  const planTyped = planData as { dias?: { fecha: string; dia_nombre: string; bloques?: { hora_inicio: string; hora_fin: string; tema: string; tipo: string; descripcion?: string; duracion_minutos?: number }[] }[] }
   const bloques = (planTyped.dias ?? []).flatMap((dia, diaIdx: number) =>
     (dia.bloques ?? []).map((bloque, bloqueIdx: number) => ({
       plan_id: plan.id,
@@ -226,6 +240,8 @@ Reglas:
       hora_fin: bloque.hora_fin,
       tema: bloque.tema,
       tipo: bloque.tipo,
+      descripcion: bloque.descripcion ?? null,
+      duracion_minutos: bloque.duracion_minutos ?? null,
       completado: false,
       orden: diaIdx * 100 + bloqueIdx
     }))
@@ -242,7 +258,14 @@ Reglas:
         details: bloquesError.details,
         hint: bloquesError.hint,
       })
+      // Un plan sin bloques está roto (no se puede tachar nada). Fallamos fuerte
+      // en vez de devolver 200 y dejar un plan inservible.
+      return NextResponse.json(
+        { error: 'El plan se creó pero no pude guardar los bloques. Probá de nuevo.' },
+        { status: 500 }
+      )
     }
+    console.log('[generar-plan] Bloques insertados:', bloques.length, 'para plan', plan.id)
   }
 
   return NextResponse.json({ planId: plan.id })

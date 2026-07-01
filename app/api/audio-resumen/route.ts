@@ -7,6 +7,15 @@ import { cookies } from 'next/headers'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request: Request) {
+  try {
+    return await handler(request)
+  } catch (e) {
+    console.error('[audio-resumen] Error no manejado:', e)
+    return NextResponse.json({ error: 'Algo salió mal generando el resumen. Intentá de nuevo.' }, { status: 500 })
+  }
+}
+
+async function handler(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,16 +71,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ guion, audio: null, aviso: 'Audio no disponible todavía: falta configurar la key de TTS.' })
   }
 
+  console.log('[audio-resumen] OPENAI_API_KEY presente:', Boolean(process.env.OPENAI_API_KEY), '· guion len:', guion.length)
   try {
     const ttsRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'alloy', input: guion, response_format: 'mp3' }),
     })
+    console.log('[audio-resumen] TTS status:', ttsRes.status)
     if (!ttsRes.ok) {
       const detalle = await ttsRes.text().catch(() => '')
       console.error('[audio-resumen] TTS falló:', ttsRes.status, detalle)
-      return NextResponse.json({ guion, audio: null, aviso: 'No pude generar el audio ahora.' })
+      // Fallback: devolvemos el guion en texto para que igual sirva de repaso.
+      return NextResponse.json({ guion, audio: null, aviso: 'No pude generar el audio ahora, pero acá tenés el resumen en texto.' })
     }
     const buf = Buffer.from(await ttsRes.arrayBuffer())
     const dataUrl = `data:audio/mp3;base64,${buf.toString('base64')}`

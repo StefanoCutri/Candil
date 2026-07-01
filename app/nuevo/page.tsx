@@ -192,15 +192,23 @@ export default function NuevoExamenPage() {
       if (examError || !examen) throw examError
 
       if (temas.length > 0) {
-        await supabase.from('temas').insert(
-          temas.map((t, i) => ({
-            examen_id: examen.id,
-            nombre: t.nombre,
-            ya_lo_se: t.yaloSe,
-            peso: null,
-            orden: i,
-          }))
-        )
+        const { data: temasInsertados, error: temasError } = await supabase
+          .from('temas')
+          .insert(
+            temas.map((t, i) => ({
+              examen_id: examen.id,
+              nombre: t.nombre,
+              ya_lo_se: t.yaloSe,
+              peso: null,
+              orden: i,
+            }))
+          )
+          .select()
+        console.log('[nuevo] Temas insertados:', temasInsertados?.length ?? 0, 'de', temas.length, 'para examen_id', examen.id)
+        if (temasError) {
+          console.error('[nuevo] Error insertando temas:', temasError)
+          throw temasError
+        }
       }
 
       const hayBloques = esPro && disponibilidad.some(d => d.bloques.length > 0)
