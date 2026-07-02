@@ -44,6 +44,7 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       nombre={nombre}
+      email={user.email ?? null}
       racha={profile?.racha_dias ?? 0}
       ultimaActividad={profile?.ultima_actividad ?? null}
       examenes={(examenes ?? []) as unknown as ExamenRow[]}

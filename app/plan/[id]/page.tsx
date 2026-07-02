@@ -141,7 +141,7 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true)
   const [activeDayIdx, setActiveDayIdx] = useState(0)
   const [copiado, setCopiado] = useState(false)
-  const [showDiaDone, setShowDiaDone] = useState<string | null>(null)
+  const [showDiaDone, setShowDiaDone] = useState<{ nombre: string; idx: number } | null>(null)
   const [motivMsg, setMotivMsg] = useState('')
   const [toast, setToast] = useState(false)
   const [esPro, setEsPro] = useState(false)
@@ -240,7 +240,7 @@ export default function PlanPage() {
     const bloquesDelDia = next.filter(b => b.dia === dia.fecha)
     const realesDia = bloquesDelDia.filter(b => b.tipo !== 'pausa')
     if (realesDia.length > 0 && realesDia.every(b => b.completado) && nuevo) {
-      setTimeout(() => setShowDiaDone(dia.dia_nombre), 300)
+      setTimeout(() => setShowDiaDone({ nombre: dia.dia_nombre, idx: diIdx }), 300)
     }
   }
 
@@ -590,7 +590,7 @@ export default function PlanPage() {
 
         {/* ── CONFIGURACIÓN ── */}
         <section style={{ marginTop: '4rem' }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
             Configuración
           </h2>
           <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '6px 20px', marginBottom: 28 }}>
@@ -666,10 +666,14 @@ export default function PlanPage() {
             </div>
             <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem' }}>Día completado.</h2>
             <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: '0.4rem' }}>Terminaste todos los bloques de</p>
-            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', color: 'var(--amber)', opacity: 0.8, marginBottom: '2rem' }}>{showDiaDone}</p>
-            <button onClick={() => setShowDiaDone(null)}
+            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', color: 'var(--amber)', opacity: 0.8, marginBottom: '2rem' }}>{showDiaDone.nombre}</p>
+            <button onClick={() => {
+              const esUltimo = showDiaDone.idx >= dias.length - 1
+              if (!esUltimo) setActiveDayIdx(showDiaDone.idx + 1)
+              setShowDiaDone(null)
+            }}
               style={{ width: '100%', padding: 13, borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
-              Seguir →
+              {showDiaDone.idx >= dias.length - 1 ? '¡Terminaste!' : 'Seguir →'}
             </button>
           </div>
         </div>

@@ -39,6 +39,7 @@ export default function PerfilClient(props: {
   const [nombre, setNombre] = useState(props.nombre)
   const [guardado, setGuardado] = useState(false)
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [verTodos, setVerTodos] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [cancelMsg, setCancelMsg] = useState('')
 
@@ -147,8 +148,8 @@ export default function PerfilClient(props: {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
             {stats.map(s => (
               <div key={s.label} style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
-                <div style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.8rem', color: 'var(--ink)', lineHeight: 1, marginBottom: 6 }}>{s.valor}</div>
-                <div style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--ink)', lineHeight: 1, marginBottom: 8 }}>{s.valor}</div>
+                <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500, color: 'var(--ink-muted)' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -171,18 +172,56 @@ export default function PerfilClient(props: {
           {examenesFiltrados.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--ink-faint)', padding: '20px 0' }}>Todo tranquilo por acá.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {examenesFiltrados.map(e => (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
-                  <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>{e.materia}</span>
-                  <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFecha(e.fecha)}</span>
-                  {e.planId && (
-                    <Link href={`/plan/${e.planId}`} style={{ fontSize: 12.5, color: 'var(--amber)', textDecoration: 'none' }}>Ver →</Link>
-                  )}
-                </div>
-              ))}
-            </div>
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(verTodos ? examenesFiltrados : examenesFiltrados.slice(0, 5)).map(e => (
+                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
+                    <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>{e.materia}</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFecha(e.fecha)}</span>
+                    {e.planId && (
+                      <Link href={`/plan/${e.planId}`} style={{ fontSize: 12.5, color: 'var(--amber)', textDecoration: 'none' }}>Ver →</Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {!verTodos && examenesFiltrados.length > 5 && (
+                <button onClick={() => setVerTodos(true)}
+                  style={{ marginTop: 12, fontSize: 13, color: 'var(--amber)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                  Ver más ({examenesFiltrados.length - 5}) →
+                </button>
+              )}
+            </>
           )}
+        </section>
+
+        {/* ── Preferencias ── */}
+        <section id="preferencias" style={{ marginBottom: 40, scrollMarginTop: 80 }}>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Preferencias</h2>
+          <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '6px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: '0.5px solid var(--border)' }}>
+              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>Tema</span>
+              <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 100, background: 'var(--bg2)', border: '0.5px solid var(--border-mid)' }}>
+                {(['Sistema', 'Oscuro'] as const).map(t => {
+                  const activo = t === 'Oscuro'
+                  return (
+                    <button key={t} disabled={!activo} title={activo ? undefined : 'Próximamente'}
+                      style={{
+                        padding: '6px 14px', borderRadius: 100, border: 'none', fontFamily: 'inherit', fontSize: 12,
+                        background: activo ? 'var(--surface2)' : 'transparent',
+                        color: activo ? 'var(--ink)' : 'var(--ink-faint)',
+                        cursor: activo ? 'default' : 'not-allowed',
+                      }}>
+                      {t}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0' }}>
+              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>Idioma</span>
+              <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Español</span>
+            </div>
+          </div>
         </section>
 
         {/* ── Cerrar sesión ── */}

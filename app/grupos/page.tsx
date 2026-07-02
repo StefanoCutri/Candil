@@ -98,7 +98,7 @@ export default function GruposPage() {
                   <Link key={g.id} href={`/grupos/${g.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)', textDecoration: 'none' }}>
                     <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', color: 'var(--ink)', flex: 1 }}>{g.nombre}</span>
                     <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{g.miembros} {g.miembros === 1 ? 'miembro' : 'miembros'}</span>
-                    <span style={{ fontSize: 11, color: 'var(--amber)', letterSpacing: '0.08em', fontFamily: 'monospace' }}>{g.codigo}</span>
+                    <span style={{ fontSize: 12, color: 'var(--amber)', letterSpacing: '0.08em', fontFamily: 'monospace' }}>{g.codigo}</span>
                   </Link>
                 ))}
               </div>

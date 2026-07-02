@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Pomodoro from '@/components/Pomodoro'
 import { CandleIcon } from '@/components/CandleIcon'
+import UserMenu from '@/components/UserMenu'
 
 export type ExamenRow = {
   id: string
@@ -96,7 +97,7 @@ function RachaStrip({ racha, ultimaActividad }: { racha: number; ultimaActividad
                 border: `0.5px solid ${activo ? 'var(--amber)' : esHoy ? 'var(--border-strong)' : 'var(--border-mid)'}`,
                 transition: 'background 250ms var(--ease-out)',
               }} />
-              <span style={{ fontSize: 8, color: activo ? 'var(--amber)' : 'var(--ink-faint)', letterSpacing: '0.05em' }}>{letra}</span>
+              <span style={{ fontSize: 10, color: activo ? 'var(--amber)' : 'var(--ink-faint)', letterSpacing: '0.05em' }}>{letra}</span>
             </div>
           )
         })}
@@ -140,13 +141,20 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
           {examen.materia}
         </h3>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
-          {pills.map(p => (
+          {pills.slice(0, 2).map(p => (
             <span key={p} style={{
               fontSize: 10, padding: '2px 8px', borderRadius: 100,
               background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)',
               color: 'var(--amber)', letterSpacing: '0.04em', whiteSpace: 'nowrap',
             }}>{p}</span>
           ))}
+          {pills.length > 2 && (
+            <span title={pills.slice(2).join(', ')} style={{
+              fontSize: 10, padding: '2px 8px', borderRadius: 100,
+              background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)',
+              color: 'var(--amber)', letterSpacing: '0.04em', whiteSpace: 'nowrap',
+            }}>+{pills.length - 2}</span>
+          )}
         </div>
       </div>
 
@@ -166,8 +174,8 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
 
       <div style={{ marginTop: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <span style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Progreso</span>
-          <span style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 500 }}>{pct}%</span>
+          <span style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Progreso</span>
+          <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}>{pct}%</span>
         </div>
         <div className="progress-bar" style={{ marginBottom: 14 }}>
           <div className="progress-fill" style={{ width: `${pct}%`, transition: 'width 600ms var(--ease-out)' }} />
@@ -251,8 +259,9 @@ function EmptyState() {
 }
 
 /* ── Main ── */
-export default function DashboardClient({ nombre, racha, ultimaActividad, examenes }: {
+export default function DashboardClient({ nombre, email, racha, ultimaActividad, examenes }: {
   nombre: string
+  email: string | null
   racha: number
   ultimaActividad: string | null
   examenes: ExamenRow[]
@@ -280,14 +289,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
           <Link href="/grupos" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
             Grupos
           </Link>
-          <Link href="/perfil" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
-            Mi perfil
-          </Link>
-          <form action="/auth/signout" method="post">
-            <button style={{ color: 'var(--ink-muted)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms' }}>
-              Salir
-            </button>
-          </form>
+          <UserMenu nombre={nombre} email={email} />
         </div>
       </nav>
 
@@ -315,7 +317,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
 
             {/* Próximos */}
             <section style={{ marginBottom: 48 }}>
-              <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
                 Próximos exámenes
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
@@ -343,7 +345,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
                     display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none',
                     cursor: 'pointer', padding: 0, marginBottom: 16, fontFamily: 'inherit',
                   }}>
-                  <span style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
+                  <span style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
                     Completados ({completados.length})
                   </span>
                   <span style={{

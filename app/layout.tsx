@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Bricolage_Grotesque, Libre_Baskerville } from 'next/font/google'
 import { GeistSans } from 'geist/font/sans'
 import './globals.css'
+import TopProgress from '@/components/TopProgress'
 
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${display.variable} ${GeistSans.variable} ${libreBaskerville.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased"><TopProgress />{children}</body>
     </html>
   )
 }

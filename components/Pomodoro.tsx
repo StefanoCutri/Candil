@@ -217,7 +217,7 @@ export default function Pomodoro() {
                 {timeStr}
               </div>
             </div>
-            <p style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'center', marginBottom: '1.25rem', marginTop: '-1rem' }}>
+            <p style={{ fontSize: 12, color: 'var(--ink-muted)', textAlign: 'center', marginBottom: '1.25rem', marginTop: '-1rem' }}>
               {cycles} ciclo{cycles !== 1 ? 's' : ''} completado{cycles !== 1 ? 's' : ''}
             </p>
 

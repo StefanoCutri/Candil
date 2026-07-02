@@ -383,12 +383,12 @@ export default function NuevoExamenPage() {
                         </div>
                         <span style={{ fontSize: 18, marginBottom: 8, display: 'block' }}>{t.icon}</span>
                         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', display: 'block', marginBottom: 3 }}>{t.name}</span>
-                        <span style={{ fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{t.desc}</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{t.desc}</span>
                       </button>
                     )
                   })}
                 </div>
-                <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Podés seleccionar más de uno.</p>
+                <p style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Podés seleccionar más de uno.</p>
               </div>
 
               {/* Fecha + Hora */}
@@ -397,7 +397,7 @@ export default function NuevoExamenPage() {
                   <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Fecha del examen</label>
                   <input className="input" type="date" min={hoyStr} value={fecha} onChange={e => setFecha(e.target.value)} />
                   {fechaPasada && (
-                    <p style={{ fontSize: 11.5, color: 'rgba(235,140,120,0.9)', marginTop: 6 }}>La fecha no puede ser anterior a hoy</p>
+                    <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.9)', marginTop: 6 }}>La fecha no puede ser anterior a hoy</p>
                   )}
                 </div>
                 <div>
@@ -448,7 +448,7 @@ export default function NuevoExamenPage() {
                       <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }} onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={tema.yaloSe} onChange={() => toggleYaLoSe(tema.id)}
                           style={{ width: 14, height: 14, borderRadius: 3, border: '0.5px solid var(--border-mid)', background: 'transparent', cursor: 'pointer', accentColor: 'var(--amber)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>Ya lo sé</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Ya lo sé</span>
                       </label>
                       <button onClick={() => deleteTema(tema.id)}
                         style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 18, padding: '0 2px', lineHeight: 1, fontFamily: 'monospace', flexShrink: 0 }}>
@@ -467,7 +467,7 @@ export default function NuevoExamenPage() {
                     Siguiente →
                   </button>
                   {temas.length === 0 && (
-                    <span style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>Agregá al menos un tema para continuar</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Agregá al menos un tema para continuar</span>
                   )}
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function NuevoExamenPage() {
                         <input type="number" min={0} max={16} value={d.horas} disabled={d.bloqueado}
                           onChange={e => updateDia(d.dia, { horas: parseFloat(e.target.value) || 0 })}
                           style={{ width: 44, padding: '5px 6px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 13, textAlign: 'center', fontFamily: 'inherit', outline: 'none', WebkitAppearance: 'none' }} />
-                        <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>hs</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>hs</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
                         {/* PRO bloque button */}
@@ -525,7 +525,7 @@ export default function NuevoExamenPage() {
                               display: 'block',
                             }} />
                           </button>
-                          <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>No puedo</span>
+                          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>No puedo</span>
                         </label>
                       </div>
                     </div>
@@ -583,7 +583,7 @@ export default function NuevoExamenPage() {
                     Siguiente →
                   </button>
                   {sinHoras && (
-                    <span style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>Al menos un día tiene que tener horas disponibles</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Al menos un día tiene que tener horas disponibles</span>
                   )}
                 </div>
               </div>
