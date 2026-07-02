@@ -47,13 +47,13 @@ export default function GruposPage() {
       <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(12px)', zIndex: 50 }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
-          <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
+          <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
         <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>← Volver</Link>
       </nav>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 120px' }}>
-        <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: 8 }}>
+        <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 8 }}>
           Grupos de estudio
         </h1>
         <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: 32 }}>Estudiá con otros. Compartí tus planes y seguí los de tus compañeros.</p>
@@ -96,7 +96,7 @@ export default function GruposPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {grupos.map(g => (
                   <Link key={g.id} href={`/grupos/${g.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)', textDecoration: 'none' }}>
-                    <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.05rem', color: 'var(--ink)', flex: 1 }}>{g.nombre}</span>
+                    <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', color: 'var(--ink)', flex: 1 }}>{g.nombre}</span>
                     <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{g.miembros} {g.miembros === 1 ? 'miembro' : 'miembros'}</span>
                     <span style={{ fontSize: 11, color: 'var(--amber)', letterSpacing: '0.08em', fontFamily: 'monospace' }}>{g.codigo}</span>
                   </Link>

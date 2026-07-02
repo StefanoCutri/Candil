@@ -82,7 +82,7 @@ export default function GrupoDetallePage() {
       <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(12px)', zIndex: 50 }}>
         <Link href="/grupos" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
-          <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
+          <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
         <Link href="/grupos" style={{ fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>← Grupos</Link>
       </nav>
@@ -90,7 +90,7 @@ export default function GrupoDetallePage() {
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 120px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 28 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 400, marginBottom: 6 }}>{d.grupo.nombre}</h1>
+            <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 6 }}>{d.grupo.nombre}</h1>
             <button onClick={copiarCodigo} style={{ fontSize: 12, color: 'var(--amber)', background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '4px 12px', cursor: 'pointer', fontFamily: 'monospace', letterSpacing: '0.1em' }}>
               {copiado ? '✓ copiado' : `código: ${d.grupo.codigo}`}
             </button>
@@ -116,7 +116,7 @@ export default function GrupoDetallePage() {
             {d.planes.map(p => (
               <a key={p.id} href={p.planes ? `/p/${p.planes.token_publico}` : '#'} target="_blank" rel="noreferrer"
                 style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)', textDecoration: 'none' }}>
-                <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', flex: 1 }}>{p.planes?.examenes?.materia ?? 'Plan'}</span>
+                <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', flex: 1 }}>{p.planes?.examenes?.materia ?? 'Plan'}</span>
                 <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{p.profiles?.nombre ?? 'Alguien'}</span>
                 <span style={{ fontSize: 12, color: 'var(--amber)' }}>Ver →</span>
               </a>
@@ -131,7 +131,7 @@ export default function GrupoDetallePage() {
             const nombre = m.profiles?.nombre ?? 'Estudiante'
             return (
               <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
-                <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-serif), serif', fontSize: 13, color: 'var(--amber)' }}>
+                <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 13, color: 'var(--amber)' }}>
                   {nombre.charAt(0).toUpperCase()}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--ink)', flex: 1 }}>{nombre}{m.user_id === d.yo ? ' (vos)' : ''}</span>
@@ -148,7 +148,7 @@ export default function GrupoDetallePage() {
 function Centro({ texto }: { texto: string }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-serif), serif', fontStyle: 'italic' }}>{texto}</p>
+      <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-geist-sans), sans-serif', fontStyle: 'italic' }}>{texto}</p>
     </div>
   )
 }

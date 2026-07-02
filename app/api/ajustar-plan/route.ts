@@ -7,7 +7,7 @@ import { checkGenerationLimit } from '@/lib/tierLimits'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -127,4 +127,13 @@ Tono: cálido, directo, como un amigo que te ayuda.`,
   }
 
   return NextResponse.json({ respuesta: text })
+}
+
+export async function POST(request: Request) {
+  try {
+    return await handlePOST(request)
+  } catch (e) {
+    console.error('[ajustar-plan] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
 }

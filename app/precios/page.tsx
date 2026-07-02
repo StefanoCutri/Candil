@@ -89,7 +89,7 @@ export default function PreciosPage() {
 
       {/* ── NAV ── */}
       <nav style={{ display: 'flex', alignItems: 'center', padding: '1rem 2rem', borderBottom: '0.5px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, background: 'rgba(21,15,7,0.92)', backdropFilter: 'blur(12px)' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>
         <Link href="/dashboard" style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>
@@ -101,7 +101,7 @@ export default function PreciosPage() {
 
         {/* ── HEADER ── */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1.15, marginBottom: '0.75rem' }}>
+          <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '0.75rem' }}>
             Simple.<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>Como tiene que ser.</em>
           </h1>
           <p style={{ fontSize: 14, color: 'var(--ink-muted)' }}>Empezá gratis. Pagá solo cuando necesitás más.</p>
@@ -152,9 +152,9 @@ export default function PreciosPage() {
                     </span>
                   )}
                 </div>
-                <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.5rem', fontWeight: 400, marginBottom: 6 }}>{card.nombre}</h2>
+                <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, marginBottom: 6 }}>{card.nombre}</h2>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
-                  <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '2.2rem', letterSpacing: '-0.03em', color: card.featured ? 'var(--amber)' : 'var(--ink)' }}>
+                  <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '2.2rem', letterSpacing: '-0.03em', color: card.featured ? 'var(--amber)' : 'var(--ink)' }}>
                     {precio}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
@@ -217,7 +217,7 @@ export default function PreciosPage() {
                 <tr style={{ background: 'var(--bg2)' }}>
                   <th style={{ textAlign: 'left', padding: '12px 18px', fontWeight: 400, color: 'var(--ink-muted)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Característica</th>
                   {['Free', 'Pro', 'Plus'].map(t => (
-                    <th key={t} style={{ textAlign: 'center', padding: '12px 18px', fontFamily: 'var(--font-serif), serif', fontWeight: 400, fontSize: 14, color: t === 'Pro' ? 'var(--amber)' : 'var(--ink)' }}>
+                    <th key={t} style={{ textAlign: 'center', padding: '12px 18px', fontFamily: 'var(--font-geist-sans), sans-serif', fontWeight: 400, fontSize: 14, color: t === 'Pro' ? 'var(--amber)' : 'var(--ink)' }}>
                       {t}
                     </th>
                   ))}
@@ -248,7 +248,7 @@ export default function PreciosPage() {
           <div style={{ marginBottom: 12 }}>
             <CandleIcon size={14} />
           </div>
-          <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400, color: 'var(--ink)', marginBottom: 6 }}>
+          <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)', marginBottom: 6 }}>
             Sin compromiso. Cancelás cuando quieras.
           </h2>
           <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, maxWidth: 420, margin: '0 auto' }}>

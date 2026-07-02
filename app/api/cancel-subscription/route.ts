@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function POST() {
+async function handlePOST() {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,4 +42,13 @@ export async function POST() {
   await stripe.subscriptions.update(profile.stripe_subscription_id, { cancel_at_period_end: true })
 
   return NextResponse.json({ ok: true })
+}
+
+export async function POST() {
+  try {
+    return await handlePOST()
+  } catch (e) {
+    console.error('[cancel-subscription] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
 }

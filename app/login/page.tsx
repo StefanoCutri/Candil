@@ -62,12 +62,12 @@ export default function LoginPage() {
       {/* Logo */}
       <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 40 }}>
         <CandleIcon />
-        <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
+        <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
       </Link>
 
       {/* Card */}
       <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
+        <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
           Bienvenido de vuelta
         </h1>
         <p style={{ color: 'var(--ink-soft)', fontSize: '0.9rem', marginBottom: 28 }}>

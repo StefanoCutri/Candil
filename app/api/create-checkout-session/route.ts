@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const PRICE_IDS: Record<string, string | undefined> = {
     'pro:mensual': process.env.STRIPE_PRO_PRICE_ID,
@@ -65,4 +65,13 @@ export async function POST(request: Request) {
   })
 
   return NextResponse.json({ url: session.url })
+}
+
+export async function POST(request: Request) {
+  try {
+    return await handlePOST(request)
+  } catch (e) {
+    console.error('[create-checkout-session] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
 }

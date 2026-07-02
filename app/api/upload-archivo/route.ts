@@ -11,7 +11,7 @@ const LIMITES = {
 
 const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,4 +115,13 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ archivo: registro })
+}
+
+export async function POST(request: Request) {
+  try {
+    return await handlePOST(request)
+  } catch (e) {
+    console.error('[upload-archivo] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
 }

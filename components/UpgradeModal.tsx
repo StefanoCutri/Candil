@@ -28,7 +28,7 @@ export default function UpgradeModal({ descripcion, onClose, onContinueFree, con
             <rect x="8" y="41" width="16" height="4" rx="2" fill="#3D2B1F"/>
           </svg>
         </div>
-        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.3rem', fontWeight: 400, color: 'var(--ink)', marginBottom: '0.5rem', textAlign: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem', textAlign: 'center' }}>
           Esto es una feature Pro
         </h2>
         <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, textAlign: 'center', marginBottom: '1.5rem' }}>

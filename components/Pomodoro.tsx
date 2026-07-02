@@ -153,7 +153,7 @@ export default function Pomodoro() {
             padding: '10px 18px', borderRadius: 100,
             background: 'var(--surface2)', border: '0.5px solid var(--border-strong)',
             color: 'var(--ink)', fontSize: 14,
-            fontFamily: 'var(--font-serif), serif',
+            fontFamily: 'var(--font-geist-sans), sans-serif',
             cursor: 'pointer', boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
             zIndex: 41, transition: 'all 200ms var(--ease-out)',
           }}
@@ -190,7 +190,7 @@ export default function Pomodoro() {
             animation: 'modalIn 300ms var(--ease-out)',
           }}>
             {/* Title + state */}
-            <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.3rem', fontWeight: 400, color: 'var(--ink)', marginBottom: '0.3rem' }}>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.3rem' }}>
               Modo foco
             </h2>
             <p style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, marginBottom: '2rem' }}>
@@ -211,7 +211,7 @@ export default function Pomodoro() {
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                fontFamily: 'var(--font-serif), serif', fontSize: '2.2rem',
+                fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '2.2rem',
                 fontWeight: 400, color: 'var(--ink)', letterSpacing: '-0.04em',
               }}>
                 {timeStr}

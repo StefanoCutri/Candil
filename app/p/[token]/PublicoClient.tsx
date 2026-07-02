@@ -123,7 +123,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
         position: 'sticky', top: banner ? 42 : 0, zIndex: 50,
         background: 'rgba(21,15,7,0.92)', backdropFilter: 'blur(12px)', transition: 'top 250ms var(--ease-out)',
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>
         <span style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginLeft: '1.5rem', paddingLeft: '1.5rem', borderLeft: '0.5px solid var(--border-mid)' }}>
@@ -158,7 +158,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
               Examen · {formatFechaLarga(fechaExamen)}
             </p>
           )}
-          <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1.1 }}>
+          <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
             {plan.materia}
             {plan.tipo && <><br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{plan.tipo}</em></>}
           </h1>
@@ -218,7 +218,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
           return (
             <div key={dia.fecha} style={{ animation: 'panelIn 300ms var(--ease-out) forwards' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: '1.25rem' }}>
-                <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400 }}>{dia.dia_nombre}</span>
+                <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em' }}>{dia.dia_nombre}</span>
                 <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha)}</span>
               </div>
 
@@ -284,7 +284,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
               <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F"/>
             </svg>
           </div>
-          <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.5rem', fontWeight: 400, color: 'var(--ink)', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '1.5rem' }}>
             Armá tu propio plan.
           </h2>
           <Link href="/registro" className="btn-primary" style={{ borderRadius: 100, padding: '13px 32px' }}>

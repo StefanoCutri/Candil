@@ -67,7 +67,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
   return (
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400, color: 'var(--ink)' }}>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
           Practicá lo que estudiaste
         </h2>
         {!esPro && (
@@ -103,7 +103,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
       {practica && (
         <div style={{ animation: 'panelIn 300ms var(--ease-out) both' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--amber)', fontStyle: 'italic' }}>{practica.titulo}</span>
+            <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--amber)', fontStyle: 'italic' }}>{practica.titulo}</span>
             {practica.duracion_min ? <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>≈ {practica.duracion_min} min</span> : null}
             {conOpciones > 0 && reveladas.size > 0 && (
               <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ink-soft)' }}>{aciertos}/{conOpciones} correctas</span>

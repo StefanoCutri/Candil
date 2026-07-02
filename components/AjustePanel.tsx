@@ -88,7 +88,7 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
         {/* Header */}
         <div style={{ padding: '18px 20px', borderBottom: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <div>
-            <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.05rem', fontWeight: 400, color: 'var(--ink)', lineHeight: 1.2 }}>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, color: 'var(--ink)', lineHeight: 1.2 }}>
               Ajustar plan
             </h2>
             <p style={{ fontSize: 11, color: 'var(--amber)', marginTop: 2 }}>✦ Pro · Candil IA</p>

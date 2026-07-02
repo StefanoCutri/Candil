@@ -72,7 +72,7 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
   return (
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400, color: 'var(--ink)' }}>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
           Tus apuntes
         </h2>
         {!esPro && (

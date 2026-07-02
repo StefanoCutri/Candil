@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Pomodoro from '@/components/Pomodoro'
 import { CandleIcon } from '@/components/CandleIcon'
-import { createClient } from '@/lib/supabase/client'
 
 export type ExamenRow = {
   id: string
@@ -107,19 +105,8 @@ function RachaStrip({ racha, ultimaActividad }: { racha: number; ultimaActividad
   )
 }
 
-/* ── Trash icon (sutil) ── */
-function TrashIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6" />
-      <path d="M10 11v6M14 11v6" />
-    </svg>
-  )
-}
-
 /* ── Card de examen activo ── */
-function ExamenCard({ examen, onEliminar }: { examen: ExamenRow; onEliminar: () => void }) {
-  const router = useRouter()
+function ExamenCard({ examen }: { examen: ExamenRow }) {
   const [hover, setHover] = useState(false)
   const dias = diasRestantes(examen.fecha)
   const urgente = dias >= 0 && dias < 3
@@ -131,48 +118,25 @@ function ExamenCard({ examen, onEliminar }: { examen: ExamenRow; onEliminar: () 
   const countdownLabel = dias < 0 ? 'Ya pasó' : dias === 0 ? 'Es hoy' : dias === 1 ? 'falta 1 día' : `faltan ${dias} días`
   const countdownNum = dias <= 0 ? (dias === 0 ? 'Hoy' : '—') : String(dias)
 
-  function irAlPlan() {
-    if (planId) router.push(`/plan/${planId}`)
-    else router.push('/nuevo')
-  }
-
   return (
-    <div className="card"
+    <Link href={planId ? `/plan/${planId}` : '/nuevo'} className="card"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={irAlPlan}
       style={{
         borderRadius: 12, padding: '20px 20px 16px', position: 'relative', overflow: 'hidden',
         display: 'flex', flexDirection: 'column', gap: 0, minHeight: 230,
-        cursor: 'pointer',
+        textDecoration: 'none', color: 'inherit', cursor: 'pointer',
+        borderColor: hover ? 'var(--border-strong)' : undefined,
+        transform: hover ? 'translateY(-1px)' : 'none',
+        transition: 'border-color 200ms var(--ease-out), transform 200ms var(--ease-out)',
       }}>
-
-      {/* Overlay de acciones en hover */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 3,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-        background: 'rgba(21,15,7,0.72)', backdropFilter: 'blur(2px)',
-        opacity: hover ? 1 : 0, pointerEvents: hover ? 'auto' : 'none',
-        transition: 'opacity 200ms var(--ease-out)',
-      }}>
-        <button onClick={e => { e.stopPropagation(); irAlPlan() }}
-          style={{ fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500, padding: '9px 18px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer' }}>
-          {planId ? 'Ver plan' : 'Crear plan'}
-        </button>
-        <button onClick={e => { e.stopPropagation(); onEliminar() }} aria-label="Eliminar examen"
-          style={{ fontFamily: 'inherit', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 100, background: 'transparent', color: 'var(--ink-soft)', border: '0.5px solid var(--border-strong)', cursor: 'pointer', transition: 'color 200ms, border-color 200ms' }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(235,140,120,0.95)'; e.currentTarget.style.borderColor = 'rgba(235,140,120,0.5)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--ink-soft)'; e.currentTarget.style.borderColor = 'var(--border-strong)' }}>
-          <TrashIcon /> Eliminar
-        </button>
-      </div>
 
       {urgente && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--amber), var(--amber2))' }} />
       )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-        <h3 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.15rem', fontWeight: 400, color: 'var(--ink)', lineHeight: 1.25 }}>
+        <h3 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.25 }}>
           {examen.materia}
         </h3>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
@@ -192,7 +156,7 @@ function ExamenCard({ examen, onEliminar }: { examen: ExamenRow; onEliminar: () 
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
         <span style={{
-          fontFamily: 'var(--font-serif), serif', fontSize: '2.4rem', lineHeight: 1,
+          fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '2.4rem', lineHeight: 1,
           color: urgente ? 'var(--amber)' : 'var(--ink)', letterSpacing: '-0.03em',
         }}>
           {countdownNum}
@@ -212,17 +176,13 @@ function ExamenCard({ examen, onEliminar }: { examen: ExamenRow; onEliminar: () 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '0.5px solid var(--border)' }}>
           <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{nTemas} {nTemas === 1 ? 'tema' : 'temas'}</span>
           {planId ? (
-            <Link href={`/plan/${planId}`} style={{ fontSize: 12.5, color: 'var(--amber)', textDecoration: 'none', fontWeight: 500 }}>
-              Ver plan →
-            </Link>
+            <span style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 500 }}>Ver plan →</span>
           ) : (
-            <Link href="/nuevo" style={{ fontSize: 12.5, color: 'var(--ink-muted)', textDecoration: 'none' }}>
-              Sin plan todavía
-            </Link>
+            <span style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>Sin plan todavía</span>
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -234,7 +194,7 @@ function CompletadoCard({ examen }: { examen: ExamenRow }) {
   return (
     <div className="card" style={{ borderRadius: 12, padding: '20px 20px 16px', opacity: 0.55, display: 'flex', flexDirection: 'column', minHeight: 150 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-        <h3 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.1rem', fontWeight: 400, color: 'var(--ink)' }}>
+        <h3 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--ink)' }}>
           {examen.materia}
         </h3>
         <span style={{
@@ -277,7 +237,7 @@ function EmptyState() {
           <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F"/>
         </svg>
       </div>
-      <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.4rem', fontWeight: 400, color: 'var(--ink)', marginBottom: 8 }}>
+      <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.4rem', fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
         Todo tranquilo por acá.
       </h2>
       <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: 28 }}>
@@ -297,28 +257,8 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
   ultimaActividad: string | null
   examenes: ExamenRow[]
 }) {
-  const router = useRouter()
-  const supabase = createClient()
   const [showCompletados, setShowCompletados] = useState(false)
-  const [lista, setLista] = useState<ExamenRow[]>(examenes)
-  const [aEliminar, setAEliminar] = useState<ExamenRow | null>(null)
-  const [borrando, setBorrando] = useState(false)
-  const [errorBorrar, setErrorBorrar] = useState('')
-
-  async function confirmarEliminar() {
-    if (!aEliminar) return
-    setBorrando(true); setErrorBorrar('')
-    const { error } = await supabase.from('examenes').delete().eq('id', aEliminar.id)
-    setBorrando(false)
-    if (error) {
-      console.error('[dashboard] Error eliminando examen:', error)
-      setErrorBorrar('No se pudo eliminar. Intentá de nuevo.')
-      return
-    }
-    setLista(prev => prev.filter(e => e.id !== aEliminar.id))
-    setAEliminar(null)
-    router.refresh()
-  }
+  const lista = examenes
 
   const activos = lista.filter(e => e.estado !== 'completado' && e.estado !== 'archivado')
   const completados = lista.filter(e => e.estado === 'completado')
@@ -334,7 +274,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
       }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
-          <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
+          <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <Link href="/grupos" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
@@ -355,7 +295,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 28 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: 6 }}>
+            <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 6 }}>
               {saludo()}, {nombre}.
             </h1>
             <p style={{ color: 'var(--ink-muted)', fontSize: 14 }}>
@@ -379,7 +319,7 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
                 Próximos exámenes
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                {activos.map(e => <ExamenCard key={e.id} examen={e} onEliminar={() => setAEliminar(e)} />)}
+                {activos.map(e => <ExamenCard key={e.id} examen={e} />)}
                 <Link href="/nuevo" style={{
                   border: '0.5px dashed var(--border-mid)', borderRadius: 12, minHeight: 230,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -430,33 +370,6 @@ export default function DashboardClient({ nombre, racha, ultimaActividad, examen
 
       {/* FAB Modo foco + modal Pomodoro */}
       <Pomodoro />
-
-      {/* Modal de confirmación de borrado */}
-      {aEliminar && (
-        <div
-          onClick={e => { if (e.target === e.currentTarget && !borrando) setAEliminar(null) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
-          <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border-strong)', borderRadius: 18, padding: '2rem', maxWidth: 380, width: '100%', animation: 'modalIn 300ms var(--ease-out)' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.3rem', fontWeight: 400, color: 'var(--ink)', marginBottom: 10 }}>
-              ¿Eliminar este examen?
-            </h2>
-            <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: 8 }}>
-              Vas a borrar <strong style={{ color: 'var(--ink-soft)', fontWeight: 500 }}>{aEliminar.materia}</strong>. Se borrarán también su plan y bloques. Esta acción no se puede deshacer.
-            </p>
-            {errorBorrar && <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.95)', marginBottom: 10 }}>{errorBorrar}</p>}
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button onClick={() => setAEliminar(null)} disabled={borrando}
-                style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, padding: '11px', borderRadius: 100, background: 'transparent', color: 'var(--ink-muted)', border: '0.5px solid var(--border-mid)', cursor: borrando ? 'default' : 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={confirmarEliminar} disabled={borrando}
-                style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, padding: '11px', borderRadius: 100, background: 'rgba(200,80,60,0.9)', color: '#fff', border: 'none', cursor: borrando ? 'wait' : 'pointer', opacity: borrando ? 0.7 : 1 }}>
-                {borrando ? 'Eliminando…' : 'Eliminar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

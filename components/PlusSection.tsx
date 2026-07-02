@@ -17,7 +17,7 @@ export default function PlusSection({ examenId, esPlus, onLocked }: {
   return (
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1.25rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400, color: 'var(--ink)' }}>Herramientas Plus</h2>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>Herramientas Plus</h2>
         {!esPlus && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'rgba(180,120,200,0.12)', border: '0.5px solid rgba(180,120,200,0.3)', color: 'rgba(200,150,220,0.9)', letterSpacing: '0.06em', fontWeight: 500 }}>PLUS</span>}
       </div>
 
@@ -67,7 +67,7 @@ function MapaMental({ examenId }: { examenId: string }) {
       {mapa && (
         <div style={{ animation: 'panelIn 300ms var(--ease-out) both' }}>
           <div style={{ textAlign: 'center', marginBottom: 18 }}>
-            <span style={{ display: 'inline-block', padding: '10px 20px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', fontFamily: 'var(--font-serif), serif', fontSize: '1rem' }}>{mapa.centro}</span>
+            <span style={{ display: 'inline-block', padding: '10px 20px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem' }}>{mapa.centro}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             {mapa.ramas.map((r, i) => (

@@ -49,17 +49,26 @@ type Plan = {
     consejo: string
   }
   examenes: {
+    id: string
     materia: string
     fecha: string
+    hora: string | null
     tipo: string
+    preferencia_horario: string | null
   }
 }
 
 /* ── Helpers ── */
-function diasRestantes(fecha: string) {
+function diffDias(fecha: string) {
   const hoy = new Date()
-  const exam = new Date(fecha)
-  const diff = Math.ceil((exam.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+  hoy.setHours(0, 0, 0, 0)
+  const [y, m, d] = fecha.split('-').map(Number)
+  const exam = new Date(y, m - 1, d)
+  return Math.round((exam.getTime() - hoy.getTime()) / 86400000)
+}
+
+function diasRestantes(fecha: string) {
+  const diff = diffDias(fecha)
   if (diff < 0) return 'Pasó'
   if (diff === 0) return '¡Hoy!'
   if (diff === 1) return 'mañana'
@@ -107,7 +116,8 @@ const TAG_LABEL: Record<string, string> = {
 }
 
 const MSGS = [
-  { min: 0, max: 20, txt: '"Arrancaste. Eso ya es más que ayer."' },
+  { min: 0, max: 1, txt: '"Arrancás hoy. Todo bien, vamos."' },
+  { min: 1, max: 20, txt: '"Arrancaste. Eso ya es más que ayer."' },
   { min: 20, max: 40, txt: '"Vas bien. Cada bloque que tachás es uno menos."' },
   { min: 40, max: 60, txt: '"Mitad del camino. La segunda mitad siempre va más rápido."' },
   { min: 60, max: 80, txt: '"Ya estás en la recta final. No pares."' },
@@ -139,6 +149,10 @@ export default function PlanPage() {
   const [ajusteOpen, setAjusteOpen] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [flashKeys, setFlashKeys] = useState<Set<string>>(new Set())
+  const [archivando, setArchivando] = useState(false)
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false)
+  const [borrando, setBorrando] = useState(false)
+  const [errorBorrar, setErrorBorrar] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -155,7 +169,7 @@ export default function PlanPage() {
 
       const { data: planData } = await supabase
         .from('planes')
-        .select('id, token_publico, examen_id, contenido, examenes(materia, fecha, tipo)')
+        .select('id, token_publico, examen_id, contenido, examenes(id, materia, fecha, hora, tipo, preferencia_horario)')
         .eq('id', id)
         .single()
 
@@ -181,7 +195,7 @@ export default function PlanPage() {
       const sinPausa = bl.filter(b => b.tipo !== 'pausa')
       const done = sinPausa.filter(b => b.completado).length
       const pct = sinPausa.length > 0 ? Math.round(done / sinPausa.length * 100) : 0
-      setMotivMsg((planData as unknown as Plan).contenido?.consejo || (MSGS.find(m => pct >= m.min && pct < m.max)?.txt ?? ''))
+      setMotivMsg(MSGS.find(m => pct >= m.min && pct < m.max)?.txt ?? (planData as unknown as Plan).contenido?.consejo ?? '')
 
       setLoading(false)
     }
@@ -238,7 +252,7 @@ export default function PlanPage() {
 
     const { data: planData } = await supabase
       .from('planes')
-      .select('id, token_publico, examen_id, contenido, examenes(materia, fecha, tipo)')
+      .select('id, token_publico, examen_id, contenido, examenes(id, materia, fecha, hora, tipo, preferencia_horario)')
       .eq('id', id)
       .single()
     if (!planData) return
@@ -265,6 +279,31 @@ export default function PlanPage() {
     }
   }
 
+  async function archivarExamen() {
+    if (!plan) return
+    setArchivando(true)
+    const { error } = await supabase.from('examenes').update({ estado: 'completado' }).eq('id', plan.examen_id)
+    setArchivando(false)
+    if (error) {
+      console.error('[plan] Error archivando examen:', error)
+      return
+    }
+    router.push('/dashboard')
+  }
+
+  async function eliminarExamen() {
+    if (!plan) return
+    setBorrando(true); setErrorBorrar('')
+    const { error } = await supabase.from('examenes').delete().eq('id', plan.examen_id)
+    setBorrando(false)
+    if (error) {
+      console.error('[plan] Error eliminando examen:', error)
+      setErrorBorrar('No se pudo eliminar. Probá de nuevo.')
+      return
+    }
+    router.push('/dashboard')
+  }
+
   function compartir() {
     if (!plan) return
     const url = `${window.location.origin}/p/${plan.token_publico}`
@@ -276,7 +315,7 @@ export default function PlanPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-serif), serif' }}>Cargando tu plan...</p>
+        <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-geist-sans), sans-serif' }}>Cargando tu plan...</p>
       </div>
     )
   }
@@ -289,6 +328,7 @@ export default function PlanPage() {
   const completados = sinPausa.filter(b => b.completado).length
   const progreso = totalBloques > 0 ? Math.round(completados / totalBloques * 100) : 0
   const diffLabel = diasRestantes(plan.examenes.fecha)
+  const diasNum = diffDias(plan.examenes.fecha)
   const totalHoras = Math.round(dias.flatMap(d => d.bloques).reduce((s, b) => s + (b.duracion_minutos || 0), 0) / 60)
   const uniqueTemas = new Set(sinPausa.map(b => b.tema)).size
 
@@ -300,10 +340,10 @@ export default function PlanPage() {
 
       {/* ── NAV ── */}
       <nav style={{ display: 'flex', alignItems: 'center', padding: '1rem 2rem', borderBottom: '0.5px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, background: 'rgba(21,15,7,0.92)', backdropFilter: 'blur(12px)' }}>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>
-        <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink-soft)', marginLeft: '1.5rem', paddingLeft: '1.5rem', borderLeft: '0.5px solid var(--border-mid)' }}>
+        <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontWeight: 500, fontSize: '0.95rem', color: 'var(--ink-soft)', marginLeft: '1.5rem', paddingLeft: '1.5rem', borderLeft: '0.5px solid var(--border-mid)' }}>
           {plan.examenes.materia}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
@@ -311,12 +351,10 @@ export default function PlanPage() {
             style={{ background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '7px 12px', color: 'var(--ink-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
             <span>↗</span> Compartir
           </button>
-          {esPro && (
-            <button onClick={() => setAjusteOpen(true)}
-              style={{ background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', color: 'var(--amber)', borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
-              ✦ Ajustar plan
-            </button>
-          )}
+          <button onClick={() => esPro ? setAjusteOpen(true) : setShowUpgrade(true)}
+            style={{ background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', color: 'var(--amber)', borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
+            ✦ Ajustar plan
+          </button>
         </div>
       </nav>
 
@@ -327,10 +365,35 @@ export default function PlanPage() {
           <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.5rem' }}>
             Examen · {formatFechaLarga(plan.examenes.fecha)}
           </p>
-          <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 400, letterSpacing: '-0.025em', lineHeight: 1.1, marginBottom: '1.5rem' }}>
+          <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.5rem' }}>
             {plan.examenes.materia}<br />
             <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{plan.examenes.tipo} · {plan.examenes.fecha ? new Date(plan.examenes.fecha + 'T12:00:00').toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}</em>
           </h1>
+        </div>
+
+        {/* ── COUNTDOWN ── */}
+        <div style={{ marginBottom: '2rem' }}>
+          {diasNum > 0 && (
+            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: diasNum < 3 ? 'var(--amber)' : 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+              {diasNum === 1 ? 'Falta 1 día' : `Faltan ${diasNum} días`}
+            </p>
+          )}
+          {diasNum === 0 && (
+            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--amber)' }}>
+              El examen es hoy
+            </p>
+          )}
+          {diasNum < 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--ink-muted)' }}>
+                Este examen pasó hace {Math.abs(diasNum)} {Math.abs(diasNum) === 1 ? 'día' : 'días'}
+              </p>
+              <button onClick={archivarExamen} disabled={archivando}
+                style={{ fontFamily: 'inherit', fontSize: 12, padding: '6px 14px', borderRadius: 100, background: 'transparent', color: 'var(--ink-soft)', border: '0.5px solid var(--border-mid)', cursor: archivando ? 'wait' : 'pointer' }}>
+                {archivando ? 'Archivando…' : 'Archivar examen'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── STATS ROW ── */}
@@ -351,7 +414,7 @@ export default function PlanPage() {
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Progreso del plan</span>
-            <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.1rem', color: 'var(--amber)' }}>{progreso}%</span>
+            <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontWeight: 500, fontSize: '1rem', color: 'var(--amber)' }}>{progreso}%</span>
           </div>
           <div style={{ height: 3, background: 'var(--border-mid)', borderRadius: 100, overflow: 'hidden' }}>
             <div style={{ height: '100%', background: 'var(--amber)', borderRadius: 100, width: `${progreso}%`, transition: 'width 600ms var(--ease-out)' }} />
@@ -371,7 +434,9 @@ export default function PlanPage() {
             const bloquesDb = bloques.filter(b => b.dia === dia.fecha)
             const reales = bloquesDb.filter(b => b.tipo !== 'pausa')
             const todosCompletos = reales.length > 0 && reales.every(b => b.completado)
-            const esHoy = dia.fecha === new Date().toISOString().split('T')[0]
+            const hoyLocal = new Date().toLocaleDateString('sv-SE')
+            const esHoy = dia.fecha === hoyLocal
+            const esPasado = dia.fecha < hoyLocal
             const isActive = activeDayIdx === i
             return (
               <button key={dia.fecha} onClick={() => setActiveDayIdx(i)}
@@ -382,9 +447,13 @@ export default function PlanPage() {
                   color: esHoy ? 'var(--amber)' : isActive ? 'var(--ink)' : 'var(--ink-muted)',
                   fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
                   transition: 'all 200ms var(--ease-out)', whiteSpace: 'nowrap', flexShrink: 0,
-                  opacity: todosCompletos && !isActive ? 0.5 : 1,
+                  opacity: (esPasado && !todosCompletos && !isActive) ? 0.5 : 1,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}>
                 {dia.dia_nombre}
+                {esHoy && (
+                  <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', fontWeight: 600, letterSpacing: '0.04em' }}>Hoy</span>
+                )}
               </button>
             )
           })}
@@ -401,7 +470,7 @@ export default function PlanPage() {
           return (
             <div key={dia.fecha} style={{ animation: 'panelIn 300ms var(--ease-out) forwards' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: '1.25rem' }}>
-                <span style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', fontWeight: 400 }}>{dia.dia_nombre}</span>
+                <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em' }}>{dia.dia_nombre}</span>
                 <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha)}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--ink-muted)' }}>{completadosDia}/{reales.length} bloques</span>
               </div>
@@ -518,6 +587,46 @@ export default function PlanPage() {
           esPlus={esPlus}
           onLocked={() => setShowUpgrade(true)}
         />
+
+        {/* ── CONFIGURACIÓN ── */}
+        <section style={{ marginTop: '4rem' }}>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
+            Configuración
+          </h2>
+          <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '6px 20px', marginBottom: 28 }}>
+            {([
+              ['Materia', plan.examenes.materia],
+              ['Tipo', plan.examenes.tipo || '—'],
+              ['Fecha y hora', `${formatFechaLarga(plan.examenes.fecha)}${plan.examenes.hora ? ` · ${plan.examenes.hora.slice(0, 5)} hs` : ''}`],
+              ['Temas', `${uniqueTemas} ${uniqueTemas === 1 ? 'tema' : 'temas'}`],
+              ['Horas del plan', `${totalHoras} hs`],
+              ['Preferencia', plan.examenes.preferencia_horario === 'manana' ? 'Mañana' : plan.examenes.preferencia_horario === 'tarde' ? 'Tarde' : plan.examenes.preferencia_horario === 'noche' ? 'Noche' : '—'],
+            ] as const).map(([label, val], i, arr) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 16, padding: '13px 0', borderBottom: i < arr.length - 1 ? '0.5px solid var(--border)' : 'none' }}>
+                <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', width: 130, flexShrink: 0 }}>{label}</span>
+                <span style={{ fontSize: 14, color: 'var(--ink)', textTransform: label === 'Fecha y hora' ? 'capitalize' : 'none' }}>{val}</span>
+              </div>
+            ))}
+          </div>
+
+          <hr className="divider" style={{ marginBottom: 28 }} />
+
+          <h3 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(235,140,120,0.7)', marginBottom: 12 }}>
+            Zona peligrosa
+          </h3>
+          <div style={{ border: '0.5px solid rgba(235,140,120,0.25)', borderRadius: 12, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 4 }}>Eliminar examen</p>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+                Se borran el examen, su plan, los bloques y los apuntes asociados. No se puede deshacer.
+              </p>
+            </div>
+            <button onClick={() => setConfirmarBorrar(true)}
+              style={{ fontFamily: 'inherit', fontSize: 13, padding: '9px 18px', borderRadius: 100, background: 'transparent', color: 'rgba(235,140,120,0.9)', border: '0.5px solid rgba(235,140,120,0.4)', cursor: 'pointer', transition: 'all 200ms var(--ease-out)' }}>
+              Eliminar examen
+            </button>
+          </div>
+        </section>
       </div>
 
       </div>{/* /contenido oscurecible */}
@@ -555,13 +664,40 @@ export default function PlanPage() {
                 <CandleIcon size={20} />
               </div>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.5rem', fontWeight: 400, color: 'var(--ink)', marginBottom: '0.5rem' }}>Día completado.</h2>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem' }}>Día completado.</h2>
             <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: '0.4rem' }}>Terminaste todos los bloques de</p>
-            <p style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1rem', fontStyle: 'italic', color: 'var(--amber)', opacity: 0.8, marginBottom: '2rem' }}>{showDiaDone}</p>
+            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', color: 'var(--amber)', opacity: 0.8, marginBottom: '2rem' }}>{showDiaDone}</p>
             <button onClick={() => setShowDiaDone(null)}
               style={{ width: '100%', padding: 13, borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
               Seguir →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRMAR ELIMINAR ── */}
+      {confirmarBorrar && (
+        <div
+          onClick={e => { if (e.target === e.currentTarget && !borrando) setConfirmarBorrar(false) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
+          <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border-strong)', borderRadius: 16, padding: '2rem', maxWidth: 380, width: '100%', animation: 'modalIn 300ms var(--ease-out)' }}>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: 10 }}>
+              ¿Eliminar este examen?
+            </h2>
+            <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: 8 }}>
+              Vas a borrar <strong style={{ color: 'var(--ink-soft)', fontWeight: 500 }}>{plan.examenes.materia}</strong> con su plan y todos sus bloques. Esta acción no se puede deshacer.
+            </p>
+            {errorBorrar && <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.95)', marginBottom: 10 }}>{errorBorrar}</p>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setConfirmarBorrar(false)} disabled={borrando}
+                style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, padding: '11px', borderRadius: 100, background: 'transparent', color: 'var(--ink-muted)', border: '0.5px solid var(--border-mid)', cursor: borrando ? 'default' : 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={eliminarExamen} disabled={borrando}
+                style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, padding: '11px', borderRadius: 100, background: 'rgba(200,80,60,0.9)', color: '#fff', border: 'none', cursor: borrando ? 'wait' : 'pointer', opacity: borrando ? 0.7 : 1 }}>
+                {borrando ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

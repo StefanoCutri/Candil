@@ -78,19 +78,19 @@ export default function RegistroPage() {
     }}>
       <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 40 }}>
         <CandleIcon />
-        <span style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
+        <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
       </Link>
 
       <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
         {success ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <p style={{ fontSize: '2rem', marginBottom: 12 }}>🕯️</p>
-            <h2 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', marginBottom: 8 }}>¡Bienvenido a Candil!</h2>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><CandleIcon /></div>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', marginBottom: 8 }}>¡Bienvenido a Candil!</h2>
             <p style={{ color: 'var(--ink-soft)', fontSize: '0.9rem' }}>Redirigiendo a tu dashboard...</p>
           </div>
         ) : (
           <>
-            <h1 style={{ fontFamily: 'var(--font-baskerville)', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
+            <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
               Creá tu cuenta
             </h1>
             <p style={{ color: 'var(--ink-soft)', fontSize: '0.9rem', marginBottom: 28 }}>

@@ -10,7 +10,7 @@ body.light nav { background: linear-gradient(to bottom, rgba(245,238,227,0.95) 0
 
 .nav-logo {
   display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-baskerville);
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: 1.15rem; color: var(--ink);
   text-decoration: none; letter-spacing: -0.01em;
   transition: color 400ms;
@@ -121,7 +121,7 @@ body.light .hero-glow { opacity: 0.4; }
   color: var(--amber); opacity: 0.75; margin-bottom: 1.25rem;
 }
 .hero-h1 {
-  font-family: var(--font-baskerville); font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-weight: 700;
   font-size: clamp(3rem, 8vw, 6.5rem);
   line-height: 1.05; letter-spacing: -0.03em;
   color: var(--ink); margin-bottom: 0.2em; text-wrap: balance;
@@ -192,7 +192,7 @@ body.light .scroll-line { background: linear-gradient(to bottom, rgba(120,80,20,
   color: var(--amber); opacity: 0.7; margin-bottom: 1.5rem;
 }
 .momento-h2 {
-  font-family: var(--font-baskerville);
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: clamp(2rem, 4vw, 3rem); font-weight: 700;
   line-height: 1.15; letter-spacing: -0.025em;
   color: var(--ink); margin-bottom: 1.5rem; transition: color 400ms;
@@ -217,7 +217,7 @@ body.light .mockup-desk { background: rgba(0,0,0,0.03); }
   margin-bottom: 1.25rem; padding-bottom: 1rem;
   border-bottom: 0.5px solid var(--border);
 }
-.mock-logo { font-family: var(--font-baskerville); font-size: 0.95rem; color: var(--ink); }
+.mock-logo { font-family: var(--font-geist-sans), sans-serif; font-size: 0.95rem; color: var(--ink); }
 .mock-greeting { font-size: 11px; color: var(--amber); opacity: 0.65; margin-left: auto; }
 .mock-card {
   border-radius: 8px; padding: 11px 13px; margin-bottom: 7px;
@@ -246,7 +246,7 @@ body.light .mock-tag-d { color: #2E6B48; }
 
 /* ── STEPS ── */
 .section-h2 {
-  font-family: var(--font-baskerville);
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700;
   letter-spacing: -0.025em; color: var(--ink); line-height: 1.15; margin-bottom: 1rem;
   transition: color 400ms;
@@ -261,11 +261,11 @@ body.light .mock-tag-d { color: #2E6B48; }
 }
 .step { background: var(--bg); padding: 2.5rem 2rem; position: relative; transition: background 500ms; }
 .step-num {
-  font-family: var(--font-baskerville); font-size: 3.5rem; font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 3.5rem; font-weight: 700;
   color: var(--border-strong); line-height: 1; margin-bottom: 1.25rem; letter-spacing: -0.04em;
 }
 .step-title {
-  font-family: var(--font-baskerville); font-size: 1.15rem; font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 1.15rem; font-weight: 700;
   color: var(--ink); margin-bottom: 0.6rem; line-height: 1.2; transition: color 400ms;
 }
 .step-desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.65; transition: color 400ms; }
@@ -286,7 +286,7 @@ body.light .mock-tag-d { color: #2E6B48; }
   background: radial-gradient(circle, rgba(232,164,74,0.06) 0%, transparent 70%);
 }
 .manifiesto blockquote {
-  font-family: var(--font-baskerville);
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: clamp(1.4rem, 3.5vw, 2.5rem); font-weight: 700;
   line-height: 1.35; color: var(--ink); max-width: 780px;
   margin: 0 auto 2rem; letter-spacing: -0.02em; transition: color 400ms;
@@ -304,11 +304,11 @@ body.light .mock-tag-d { color: #2E6B48; }
 }
 .feat-card { background: var(--bg2); padding: 2.25rem 2rem; transition: background 500ms; }
 .feat-num {
-  font-family: var(--font-baskerville); font-size: 2rem; font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 2rem; font-weight: 700;
   color: var(--border-strong); line-height: 1; margin-bottom: 1.25rem; letter-spacing: -0.04em;
 }
 .feat-title {
-  font-family: var(--font-baskerville); font-size: 1.05rem; font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 1.05rem; font-weight: 700;
   color: var(--ink); margin-bottom: 0.5rem; transition: color 400ms;
 }
 .feat-desc { font-size: 13.5px; color: var(--ink-soft); line-height: 1.65; transition: color 400ms; }
@@ -333,7 +333,7 @@ body.light .price-card.featured { background: rgba(120,80,20,0.05); }
   color: var(--amber); opacity: 0.8; margin-bottom: 0.75rem;
 }
 .price-name {
-  font-family: var(--font-baskerville); font-size: 1.4rem; font-weight: 700;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 1.4rem; font-weight: 700;
   color: var(--ink); margin-bottom: 0.25rem; transition: color 400ms;
 }
 .price-amount {
@@ -376,7 +376,7 @@ body.light .cta-final::before {
   background: radial-gradient(ellipse, rgba(120,80,20,0.05) 0%, transparent 65%);
 }
 .cta-h2 {
-  font-family: var(--font-baskerville);
+  font-family: var(--font-geist-sans), sans-serif;
   font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 700;
   color: var(--ink); line-height: 1.1; letter-spacing: -0.03em;
   margin-bottom: 1.25rem; transition: color 400ms;
@@ -392,7 +392,7 @@ body.light .cta-final::before {
   display: flex; align-items: center; gap: 2rem; transition: border-color 400ms;
 }
 .footer-logo {
-  font-family: var(--font-baskerville); font-size: 1rem;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 1rem;
   color: var(--ink-muted); display: flex; align-items: center; gap: 8px;
 }
 .footer-links { display: flex; gap: 1.5rem; margin-left: auto; }

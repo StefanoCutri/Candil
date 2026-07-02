@@ -61,6 +61,25 @@ async function generarPlan(request: Request) {
 
   console.log('[generar-plan] Temas encontrados para examen', examenId, ':', (examen.temas ?? []).length)
 
+  // Límite de exámenes activos por tier (sin contar el examen recién creado)
+  const { data: profileTier } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+  const tier = profileTier?.plan ?? 'free'
+  if (tier !== 'plus') {
+    const maxActivos = tier === 'pro' ? 15 : 3
+    const { count } = await supabase
+      .from('examenes')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('estado', 'activo')
+      .neq('id', examenId)
+    if ((count ?? 0) >= maxActivos) {
+      return NextResponse.json(
+        { error: `Llegaste al límite de ${maxActivos} exámenes activos de tu plan. Completá o eliminá alguno, o pasate a un plan superior.` },
+        { status: 429 }
+      )
+    }
+  }
+
   const check = await checkGenerationLimit(supabase, user.id)
   if (!check.allowed) {
     return NextResponse.json(

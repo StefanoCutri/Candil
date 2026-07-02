@@ -40,7 +40,7 @@ async function requirePlus() {
   return { user, admin }
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const ctx = await requirePlus()
   if (ctx.error) return ctx.error
   const { user, admin } = ctx
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ grupos: (grupos ?? []).map(g => ({ ...g, miembros: porGrupo[g.id] ?? 1 })) })
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const ctx = await requirePlus()
   if (ctx.error) return ctx.error
   const { user, admin } = ctx
@@ -121,4 +121,22 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
+}
+
+export async function GET(request: Request) {
+  try {
+    return await handleGET(request)
+  } catch (e) {
+    console.error('[grupos] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    return await handlePOST(request)
+  } catch (e) {
+    console.error('[grupos] Error inesperado:', e)
+    return NextResponse.json({ error: 'Algo salió mal. Probá de nuevo.' }, { status: 500 })
+  }
 }

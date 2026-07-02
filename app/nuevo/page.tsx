@@ -61,6 +61,7 @@ export default function NuevoExamenPage() {
   // 'bloque': abierto desde "+ Bloque" (solo cerrar) · 'next': abierto desde "Siguiente" (ofrece continuar sin bloques)
   const [modalCtx, setModalCtx] = useState<'bloque' | 'next'>('bloque')
   const [userPlan, setUserPlan] = useState<string>('free')
+  const [limiteMsg, setLimiteMsg] = useState<string | null>(null)
   const esPro = userPlan === 'pro' || userPlan === 'plus'
 
   useEffect(() => {
@@ -89,6 +90,11 @@ export default function NuevoExamenPage() {
     DIAS.map(d => ({ dia: d.key, diaNombre: d.nombre, horas: d.key === 'sábado' || d.key === 'domingo' ? 4 : 2, bloqueado: false, bloques: [] }))
   )
   const [preferencia, setPreferencia] = useState<Preferencia>('manana')
+
+  const hoyStr = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
+  const fechaPasada = !!fecha && fecha < hoyStr
+  const paso1Invalido = !materia.trim() || !fecha || fechaPasada
+  const sinHoras = !disponibilidad.some(d => !d.bloqueado && d.horas > 0)
 
   /* ── Tipo toggle ── */
   function toggleTipo(t: TipoExamen) {
@@ -229,6 +235,12 @@ export default function NuevoExamenPage() {
         body: JSON.stringify({ examenId: examen.id }),
       })
 
+      if (response.status === 429) {
+        const data = await response.json().catch(() => null)
+        setGenerando(false)
+        setLimiteMsg(data?.error ?? 'Llegaste al límite de tu plan.')
+        return
+      }
       if (!response.ok) {
         const data = await response.json().catch(() => null)
         throw new Error(data?.error ?? '')
@@ -239,10 +251,10 @@ export default function NuevoExamenPage() {
       setGenerando(false)
       console.error('[nuevo] Error generando plan:', e)
       // Los errores de Supabase (PostgrestError) no son instanceof Error pero traen .message
-      const msg = e instanceof Error ? e.message
-        : (e && typeof e === 'object' && 'message' in e) ? String((e as { message: unknown }).message)
-        : ''
-      alert(msg || 'Algo salió mal. Intentá de nuevo.')
+      const msg = e instanceof Error ? e.message : ''
+      // Solo mostramos mensajes que ya vienen humanizados de la API (ej: límite de tier)
+      const esHumano = msg && !/supabase|postgrest|pgrst|column|relation|violates|jwt/i.test(msg)
+      alert(esHumano ? msg : 'Algo salió mal armando tu plan. Probá de nuevo.')
     }
   }
 
@@ -275,7 +287,7 @@ export default function NuevoExamenPage() {
             <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F"/>
           </svg>
         </div>
-        <h2 style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.2rem', color: 'var(--ink)', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', color: 'var(--ink)', marginBottom: '0.5rem' }}>
           Candil está armando tu plan
           <span style={{ display: 'inline-flex', gap: 4, marginLeft: 2 }}>
             {[0, 0.2, 0.4].map((delay, i) => (
@@ -293,7 +305,7 @@ export default function NuevoExamenPage() {
 
       {/* ── NAV ── */}
       <nav style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 2rem', borderBottom: '0.5px solid var(--border)', flexShrink: 0, position: 'relative' }}>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-serif), serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>
 
@@ -329,7 +341,7 @@ export default function NuevoExamenPage() {
           {step === 1 && (
             <>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 1 de 4</p>
-              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
                 ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>rendir?</em>
               </h1>
               <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Contanos de qué se trata el examen.</p>
@@ -383,7 +395,10 @@ export default function NuevoExamenPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Fecha del examen</label>
-                  <input className="input" type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
+                  <input className="input" type="date" min={hoyStr} value={fecha} onChange={e => setFecha(e.target.value)} />
+                  {fechaPasada && (
+                    <p style={{ fontSize: 11.5, color: 'rgba(235,140,120,0.9)', marginTop: 6 }}>La fecha no puede ser anterior a hoy</p>
+                  )}
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Hora</label>
@@ -393,8 +408,8 @@ export default function NuevoExamenPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
                 <span />
-                <button onClick={() => goTo(2)} disabled={!materia.trim() || !fecha}
-                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: !materia.trim() || !fecha ? 'not-allowed' : 'pointer', opacity: !materia.trim() || !fecha ? 0.5 : 1, transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
+                <button onClick={() => goTo(2)} disabled={paso1Invalido}
+                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: paso1Invalido ? 'not-allowed' : 'pointer', opacity: paso1Invalido ? 0.5 : 1, transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
                   Siguiente →
                 </button>
               </div>
@@ -405,7 +420,7 @@ export default function NuevoExamenPage() {
           {step === 2 && (
             <>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 2 de 4</p>
-              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
                 ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
               </h1>
               <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Agregá los temas uno por uno. Marcá los que ya sabés.</p>
@@ -446,10 +461,15 @@ export default function NuevoExamenPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
                 <button onClick={() => goTo(1)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
-                <button onClick={() => goTo(3)} disabled={temas.length === 0}
-                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: temas.length === 0 ? 'not-allowed' : 'pointer', opacity: temas.length === 0 ? 0.5 : 1, transition: 'background 200ms' }}>
-                  Siguiente →
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  <button onClick={() => goTo(3)} disabled={temas.length === 0}
+                    style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: temas.length === 0 ? 'not-allowed' : 'pointer', opacity: temas.length === 0 ? 0.5 : 1, transition: 'background 200ms' }}>
+                    Siguiente →
+                  </button>
+                  {temas.length === 0 && (
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>Agregá al menos un tema para continuar</span>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -458,7 +478,7 @@ export default function NuevoExamenPage() {
           {step === 3 && (
             <>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 3 de 4</p>
-              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
                 ¿Cuándo podés<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
               </h1>
               <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Indicá cuántas horas disponés por día.</p>
@@ -557,10 +577,15 @@ export default function NuevoExamenPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
                 <button onClick={() => goTo(2)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
-                <button onClick={handleNext3}
-                  style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms' }}>
-                  Siguiente →
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                  <button onClick={handleNext3} disabled={sinHoras}
+                    style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: sinHoras ? 'not-allowed' : 'pointer', opacity: sinHoras ? 0.5 : 1, transition: 'background 200ms' }}>
+                    Siguiente →
+                  </button>
+                  {sinHoras && (
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>Al menos un día tiene que tener horas disponibles</span>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -569,7 +594,7 @@ export default function NuevoExamenPage() {
           {step === 4 && (
             <>
               <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 4 de 4</p>
-              <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
                 Todo<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>listo.</em>
               </h1>
               <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Revisá el resumen y generá tu plan.</p>
@@ -585,7 +610,7 @@ export default function NuevoExamenPage() {
               </div>
 
               <button onClick={handleGenerar}
-                style={{ width: '100%', fontFamily: 'var(--font-serif), serif', fontSize: '1rem', fontStyle: 'italic', padding: '16px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
+                style={{ width: '100%', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', padding: '16px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
                 Generar mi plan →
               </button>
 
@@ -597,6 +622,15 @@ export default function NuevoExamenPage() {
           )}
         </div>
       </main>
+
+      {/* ── UPGRADE MODAL (límite de tier) ── */}
+      {limiteMsg && (
+        <UpgradeModal
+          descripcion={limiteMsg}
+          onClose={() => setLimiteMsg(null)}
+          onContinueFree={() => setLimiteMsg(null)}
+        />
+      )}
 
       {/* ── UPGRADE MODAL ── */}
       {showModal && (

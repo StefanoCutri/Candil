@@ -87,13 +87,13 @@ export default function PerfilClient(props: {
       <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(12px)', zIndex: 50 }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
-          <span style={{ fontFamily: 'var(--font-serif), serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
+          <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
         <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>← Volver</Link>
       </nav>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 120px' }}>
-        <h1 style={{ fontFamily: 'var(--font-serif), serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 400, letterSpacing: '-0.02em', marginBottom: 36 }}>
+        <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 36 }}>
           Mi perfil
         </h1>
 
@@ -101,7 +101,7 @@ export default function PerfilClient(props: {
         <section style={{ marginBottom: 40 }}>
           <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Información</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-serif), serif', fontSize: '1.6rem', color: 'var(--amber)', flexShrink: 0 }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.6rem', color: 'var(--amber)', flexShrink: 0 }}>
               {inicial}
             </div>
             <div style={{ flex: 1 }}>
@@ -147,7 +147,7 @@ export default function PerfilClient(props: {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
             {stats.map(s => (
               <div key={s.label} style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
-                <div style={{ fontFamily: 'var(--font-serif), serif', fontSize: '1.8rem', color: 'var(--ink)', lineHeight: 1, marginBottom: 6 }}>{s.valor}</div>
+                <div style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.8rem', color: 'var(--ink)', lineHeight: 1, marginBottom: 6 }}>{s.valor}</div>
                 <div style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{s.label}</div>
               </div>
             ))}
