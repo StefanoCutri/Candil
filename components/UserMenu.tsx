@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export default function UserMenu({ nombre, email }: { nombre: string; email: string | null }) {
+  const t = useTranslations('nav')
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -64,15 +66,15 @@ export default function UserMenu({ nombre, email }: { nombre: string; email: str
           )}
           <hr className="divider" style={{ margin: '2px 4px 6px' }} />
           <Link href="/perfil" style={itemStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff} onClick={() => setOpen(false)}>
-            Mi perfil
+            {t('profile')}
           </Link>
           <Link href="/perfil#preferencias" style={itemStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff} onClick={() => setOpen(false)}>
-            Preferencias
+            {t('preferences')}
           </Link>
           <hr className="divider" style={{ margin: '6px 4px' }} />
           <form action="/auth/signout" method="post" style={{ margin: 0 }}>
             <button type="submit" style={itemStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
-              Cerrar sesión
+              {t('logout')}
             </button>
           </form>
         </div>

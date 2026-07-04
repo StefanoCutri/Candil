@@ -1,10 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CandleIcon } from '@/components/CandleIcon'
+import { useTranslations, useLocale } from 'next-intl'
+
+const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
+const IDIOMAS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português']] as const
 
 export type PerfilExamen = {
   id: string
@@ -17,9 +21,9 @@ export type PerfilExamen = {
 const PLAN_LABEL: Record<string, string> = { free: 'Free', pro: 'Pro', plus: 'Plus' }
 type Filtro = 'todos' | 'activo' | 'completado' | 'archivado'
 
-function formatFecha(fecha: string) {
+function formatFecha(fecha: string, dateLocale: string) {
   const [y, m, d] = fecha.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export default function PerfilClient(props: {
@@ -35,11 +39,31 @@ export default function PerfilClient(props: {
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const t = useTranslations('profile')
+  const tCommon = useTranslations('common')
+  const locale = useLocale()
+  const dateLocale = DATE_LOCALES[locale] ?? 'es-AR'
 
   const [nombre, setNombre] = useState(props.nombre)
   const [guardado, setGuardado] = useState(false)
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [verTodos, setVerTodos] = useState(false)
+  const [tema, setTema] = useState<'system' | 'dark' | 'light'>('dark')
+
+  useEffect(() => {
+    const guardadoTema = localStorage.getItem('candil-theme')
+    if (guardadoTema === 'light' || guardadoTema === 'system') setTema(guardadoTema)
+  }, [])
+
+  function cambiarTema(valor: 'system' | 'dark' | 'light') {
+    setTema(valor)
+    localStorage.setItem('candil-theme', valor)
+    const efectivo = valor === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      : valor
+    if (efectivo === 'light') document.documentElement.setAttribute('data-theme', 'light')
+    else document.documentElement.removeAttribute('data-theme')
+  }
   const [cancelando, setCancelando] = useState(false)
   const [cancelMsg, setCancelMsg] = useState('')
 
@@ -56,17 +80,23 @@ export default function PerfilClient(props: {
     setTimeout(() => setGuardado(false), 2000)
   }
 
+  function cambiarIdioma(nuevo: string) {
+    try { localStorage.setItem('candil-locale', nuevo) } catch {}
+    document.cookie = `candil-locale=${nuevo};path=/;max-age=31536000;samesite=lax`
+    window.location.reload()
+  }
+
   async function cancelarSub() {
-    if (!confirm('¿Cancelar tu suscripción? Vas a mantener el acceso hasta que termine el período pago.')) return
+    if (!confirm(t('cancel_confirm'))) return
     setCancelando(true)
     setCancelMsg('')
     try {
       const res = await fetch('/api/cancel-subscription', { method: 'POST' })
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? 'No se pudo cancelar.')
-      setCancelMsg('Listo. Tu plan se cancela al final del período.')
+      if (!res.ok) throw new Error(data?.error ?? t('cancel_error'))
+      setCancelMsg(t('cancel_done'))
     } catch (e) {
-      setCancelMsg(e instanceof Error ? e.message : 'No se pudo cancelar.')
+      setCancelMsg(e instanceof Error ? e.message : t('cancel_error'))
     } finally {
       setCancelando(false)
     }
@@ -75,41 +105,41 @@ export default function PerfilClient(props: {
   const examenesFiltrados = props.examenes.filter(e => filtro === 'todos' || e.estado === filtro)
 
   const stats = [
-    { label: 'Exámenes', valor: props.totalExamenes },
-    { label: 'Rendidos', valor: props.rendidos },
-    { label: 'Horas estudiadas', valor: props.horasEstudiadas },
-    { label: 'Racha actual', valor: props.racha },
-    { label: 'Mejor racha', valor: props.mejorRacha },
+    { label: t('exams'), valor: props.totalExamenes },
+    { label: t('passed_exams'), valor: props.rendidos },
+    { label: t('hours'), valor: props.horasEstudiadas },
+    { label: t('current_streak'), valor: props.racha },
+    { label: t('best_streak'), valor: props.mejorRacha },
   ]
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)', fontWeight: 300 }}>
       {/* Nav */}
-      <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(12px)', zIndex: 50 }}>
+      <nav style={{ borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'var(--nav-bg)', backdropFilter: 'blur(12px)', zIndex: 50 }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
           <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1rem' }}>Candil</span>
         </Link>
-        <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>← Volver</Link>
+        <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-muted)', textDecoration: 'none' }}>← {tCommon('back')}</Link>
       </nav>
 
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 120px' }}>
         <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 36 }}>
-          Mi perfil
+          {t('title')}
         </h1>
 
         {/* ── Información ── */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Información</h2>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{t('info')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.6rem', color: 'var(--amber)', flexShrink: 0 }}>
               {inicial}
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>Nombre</label>
+              <label style={{ display: 'block', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>{t('name')}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input className="input" value={nombre} onChange={e => setNombre(e.target.value)} onBlur={guardarNombre} placeholder="Tu nombre" />
-                {guardado && <span style={{ fontSize: 12, color: 'var(--green)', whiteSpace: 'nowrap' }}>✓ Guardado</span>}
+                <input className="input" value={nombre} onChange={e => setNombre(e.target.value)} onBlur={guardarNombre} placeholder={t('name_placeholder')} />
+                {guardado && <span style={{ fontSize: 12, color: 'var(--green)', whiteSpace: 'nowrap' }}>✓ {tCommon('saved')}</span>}
               </div>
             </div>
           </div>
@@ -121,7 +151,7 @@ export default function PerfilClient(props: {
 
         {/* ── Tu plan ── */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Tu plan</h2>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{t('your_plan')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
             <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', color: 'var(--amber)', fontWeight: 500 }}>
               {PLAN_LABEL[props.plan] ?? props.plan}
@@ -130,11 +160,11 @@ export default function PerfilClient(props: {
               {esPro ? (
                 <button onClick={cancelarSub} disabled={cancelando}
                   style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {cancelando ? 'Cancelando…' : 'Cancelar suscripción'}
+                  {cancelando ? t('cancelling') : t('cancel_sub')}
                 </button>
               ) : (
                 <Link href="/precios" className="btn-primary" style={{ padding: '9px 18px', fontSize: '0.85rem', borderRadius: 100 }}>
-                  Mejorar plan →
+                  {t('upgrade')}
                 </Link>
               )}
             </div>
@@ -144,7 +174,7 @@ export default function PerfilClient(props: {
 
         {/* ── Estadísticas ── */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Estadísticas</h2>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{t('stats')}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
             {stats.map(s => (
               <div key={s.label} style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
@@ -157,7 +187,7 @@ export default function PerfilClient(props: {
 
         {/* ── Tus exámenes ── */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Tus exámenes</h2>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{t('your_exams')}</h2>
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
             {(['todos', 'activo', 'completado', 'archivado'] as Filtro[]).map(f => (
               <button key={f} onClick={() => setFiltro(f)}
@@ -165,29 +195,29 @@ export default function PerfilClient(props: {
                   border: `0.5px solid ${filtro === f ? 'var(--border-strong)' : 'var(--border-mid)'}`,
                   background: filtro === f ? 'var(--surface2)' : 'transparent',
                   color: filtro === f ? 'var(--ink)' : 'var(--ink-muted)' }}>
-                {f === 'todos' ? 'Todos' : f === 'activo' ? 'Activos' : f === 'completado' ? 'Completados' : 'Archivados'}
+                {t(`filter_${f}`)}
               </button>
             ))}
           </div>
           {examenesFiltrados.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--ink-faint)', padding: '20px 0' }}>Todo tranquilo por acá.</p>
+            <p style={{ fontSize: 13, color: 'var(--ink-faint)', padding: '20px 0' }}>{t('empty')}</p>
           ) : (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {(verTodos ? examenesFiltrados : examenesFiltrados.slice(0, 5)).map(e => (
                   <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, background: 'var(--surface)', border: '0.5px solid var(--border)' }}>
                     <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>{e.materia}</span>
-                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFecha(e.fecha)}</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFecha(e.fecha, dateLocale)}</span>
                     {e.planId && (
-                      <Link href={`/plan/${e.planId}`} style={{ fontSize: 12.5, color: 'var(--amber)', textDecoration: 'none' }}>Ver →</Link>
+                      <Link href={`/plan/${e.planId}`} style={{ fontSize: 12.5, color: 'var(--amber)', textDecoration: 'none' }}>{t('view')}</Link>
                     )}
                   </div>
                 ))}
               </div>
-              {!verTodos && examenesFiltrados.length > 5 && (
-                <button onClick={() => setVerTodos(true)}
+              {examenesFiltrados.length > 5 && (
+                <button onClick={() => setVerTodos(v => !v)}
                   style={{ marginTop: 12, fontSize: 13, color: 'var(--amber)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                  Ver más ({examenesFiltrados.length - 5}) →
+                  {verTodos ? t('show_less') : t('show_more', { count: examenesFiltrados.length - 5 })}
                 </button>
               )}
             </>
@@ -196,30 +226,35 @@ export default function PerfilClient(props: {
 
         {/* ── Preferencias ── */}
         <section id="preferencias" style={{ marginBottom: 40, scrollMarginTop: 80 }}>
-          <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>Preferencias</h2>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{t('preferences')}</h2>
           <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '6px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: '0.5px solid var(--border)' }}>
-              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>Tema</span>
+              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>{t('theme')}</span>
               <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 100, background: 'var(--bg2)', border: '0.5px solid var(--border-mid)' }}>
-                {(['Sistema', 'Oscuro'] as const).map(t => {
-                  const activo = t === 'Oscuro'
+                {([['system', t('theme_system')], ['dark', t('theme_dark')], ['light', t('theme_light')]] as const).map(([valor, label]) => {
+                  const activo = tema === valor
                   return (
-                    <button key={t} disabled={!activo} title={activo ? undefined : 'Próximamente'}
+                    <button key={valor} onClick={() => cambiarTema(valor)}
                       style={{
                         padding: '6px 14px', borderRadius: 100, border: 'none', fontFamily: 'inherit', fontSize: 12,
                         background: activo ? 'var(--surface2)' : 'transparent',
-                        color: activo ? 'var(--ink)' : 'var(--ink-faint)',
-                        cursor: activo ? 'default' : 'not-allowed',
+                        color: activo ? 'var(--ink)' : 'var(--ink-muted)',
+                        cursor: 'pointer', transition: 'background 200ms, color 200ms',
                       }}>
-                      {t}
+                      {label}
                     </button>
                   )
                 })}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0' }}>
-              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>Idioma</span>
-              <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Español</span>
+              <span style={{ fontSize: 14, color: 'var(--ink)', flex: 1 }}>{t('language')}</span>
+              <select value={locale} onChange={e => cambiarIdioma(e.target.value)}
+                style={{ fontSize: 13, color: 'var(--ink)', background: 'var(--bg2)', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontFamily: 'inherit', outline: 'none' }}>
+                {IDIOMAS.map(([valor, label]) => (
+                  <option key={valor} value={valor}>{label}</option>
+                ))}
+              </select>
             </div>
           </div>
         </section>
@@ -227,7 +262,7 @@ export default function PerfilClient(props: {
         {/* ── Cerrar sesión ── */}
         <form action="/auth/signout" method="post">
           <button style={{ fontSize: 13, color: 'rgba(200,90,90,0.8)', background: 'none', border: '0.5px solid rgba(200,90,90,0.25)', borderRadius: 8, padding: '10px 18px', cursor: 'pointer', fontFamily: 'inherit' }}>
-            Cerrar sesión
+            {t('logout')}
           </button>
         </form>
       </main>

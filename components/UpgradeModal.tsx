@@ -1,24 +1,20 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
-const FEATURES_PRO = [
-  'Bloques horarios por día (ej: 7am–11am y 10pm–12am)',
-  'Ajuste del plan por chat con IA',
-  'Múltiples exámenes simultáneos',
-  'Preguntas de práctica desde tus apuntes',
-]
-
-export default function UpgradeModal({ descripcion, onClose, onContinueFree, continueLabel = 'Continuar con Free' }: {
+export default function UpgradeModal({ descripcion, onClose, onContinueFree, continueLabel }: {
   descripcion?: string
   onClose: () => void
   onContinueFree?: () => void
   continueLabel?: string
 }) {
+  const t = useTranslations('upgrade')
+  const FEATURES_PRO = [t('feat_blocks'), t('feat_chat'), t('feat_multi'), t('feat_practice')]
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
+      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
       <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border-strong)', borderRadius: 16, padding: '2rem', maxWidth: 400, width: '100%', animation: 'modalIn 300ms var(--ease-out)' }}>
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <svg width="32" height="48" viewBox="0 0 32 48" fill="none">
@@ -29,10 +25,10 @@ export default function UpgradeModal({ descripcion, onClose, onContinueFree, con
           </svg>
         </div>
         <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem', textAlign: 'center' }}>
-          Esto es una feature Pro
+          {t('title')}
         </h2>
         <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, textAlign: 'center', marginBottom: '1.5rem' }}>
-          {descripcion ?? 'Con Candil Pro desbloqueás todo esto:'}
+          {descripcion ?? t('default_desc')}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '1.75rem' }}>
           {FEATURES_PRO.map(feat => (
@@ -45,11 +41,11 @@ export default function UpgradeModal({ descripcion, onClose, onContinueFree, con
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Link href="/precios"
             style={{ fontFamily: 'inherit', fontSize: 14, padding: 13, borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms', width: '100%', textAlign: 'center', textDecoration: 'none', display: 'block' }}>
-            Ver planes → $4.99/mes
+            {t('see_plans')}
           </Link>
           <button onClick={onContinueFree ?? onClose}
             style={{ fontFamily: 'inherit', fontSize: 13, padding: 10, borderRadius: 100, background: 'transparent', border: '0.5px solid var(--border-mid)', color: 'var(--ink-muted)', cursor: 'pointer', transition: 'all 200ms', width: '100%' }}>
-            {continueLabel}
+            {continueLabel ?? t('continue_free')}
           </button>
         </div>
       </div>

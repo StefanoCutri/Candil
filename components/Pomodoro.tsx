@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 
 type PomoMode = 'closed' | 'open' | 'minimized'
 type Phase = 'idle' | 'studying' | 'paused' | 'break' | 'paused-break'
@@ -36,6 +37,7 @@ function playChime() {
 }
 
 export default function Pomodoro() {
+  const t = useTranslations('pomodoro')
   const [mode, setMode] = useState<PomoMode>('closed')
   const [studyMin, setStudyMin] = useState(45)
   const [breakMin, setBreakMin] = useState(5)
@@ -106,14 +108,14 @@ export default function Pomodoro() {
   const timeStr = fmt(secsLeft)
 
   const stateLabel = {
-    idle: 'Listo para arrancar',
-    studying: 'Estudiando',
-    paused: 'Pausado',
-    break: 'Descansá — lo ganaste',
-    'paused-break': 'Descanso · Pausado',
+    idle: t('state_idle'),
+    studying: t('state_studying'),
+    paused: t('state_paused'),
+    break: t('state_break'),
+    'paused-break': t('state_paused_break'),
   }[phase]
 
-  const btnLabel = phase === 'idle' ? 'Iniciar' : isRunning ? 'Pausar' : 'Continuar'
+  const btnLabel = phase === 'idle' ? t('start') : isRunning ? t('pause') : t('resume')
 
   return (
     <>
@@ -139,7 +141,7 @@ export default function Pomodoro() {
             t.style.background = 'var(--surface2)'; t.style.color = 'var(--ink-soft)'; t.style.borderColor = 'var(--border-strong)'
           }}
         >
-          <span style={{ fontSize: 16 }}>◎</span> Modo foco
+          <span style={{ fontSize: 16 }}>◎</span> {t('focus_mode')}
         </button>
       )}
 
@@ -168,7 +170,7 @@ export default function Pomodoro() {
         >
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)', animation: 'pomoPillarPulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
           {timeStr}
-          <span style={{ fontSize: 11, color: 'var(--ink-muted)', fontFamily: 'inherit' }}>· foco</span>
+          <span style={{ fontSize: 11, color: 'var(--ink-muted)', fontFamily: 'inherit' }}>· {t('focus_short')}</span>
         </button>
       )}
 
@@ -178,7 +180,7 @@ export default function Pomodoro() {
           onClick={e => { if (e.target === e.currentTarget) close() }}
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(21,15,7,0.88)', backdropFilter: 'blur(8px)',
+            background: 'var(--overlay)', backdropFilter: 'blur(8px)',
             zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)',
           }}
@@ -191,7 +193,7 @@ export default function Pomodoro() {
           }}>
             {/* Title + state */}
             <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.3rem' }}>
-              Modo foco
+              {t('focus_mode')}
             </h2>
             <p style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, marginBottom: '2rem' }}>
               {stateLabel}
@@ -218,13 +220,13 @@ export default function Pomodoro() {
               </div>
             </div>
             <p style={{ fontSize: 12, color: 'var(--ink-muted)', textAlign: 'center', marginBottom: '1.25rem', marginTop: '-1rem' }}>
-              {cycles} ciclo{cycles !== 1 ? 's' : ''} completado{cycles !== 1 ? 's' : ''}
+              {t('cycles_done', { count: cycles })}
             </p>
 
             {/* Selectors */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: '1.75rem' }}>
               <div style={{ textAlign: 'left' }}>
-                <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6, display: 'block' }}>Estudio</span>
+                <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6, display: 'block' }}>{t('study')}</span>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {STUDY_OPTS.map(m => (
                     <button key={m} onClick={() => { setStudyMin(m); if (!isRunning && !isBreak) { setSecsLeft(m * 60); setTotalSecs(m * 60) } }}
@@ -240,7 +242,7 @@ export default function Pomodoro() {
                 </div>
               </div>
               <div style={{ textAlign: 'left' }}>
-                <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6, display: 'block' }}>Descanso</span>
+                <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6, display: 'block' }}>{t('break')}</span>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {BREAK_OPTS.map(m => (
                     <button key={m} onClick={() => { setBreakMin(m); if (!isRunning && isBreak) { setSecsLeft(m * 60); setTotalSecs(m * 60) } }}
@@ -277,11 +279,11 @@ export default function Pomodoro() {
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
               <button onClick={minimize}
                 style={{ fontSize: 12, color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms' }}>
-                Minimizar —
+                {t('minimize')}
               </button>
               <button onClick={close}
                 style={{ fontSize: 12, color: 'var(--ink-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color 200ms' }}>
-                Cerrar
+                {t('close')}
               </button>
             </div>
           </div>

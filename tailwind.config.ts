@@ -17,8 +17,8 @@ const config: Config = {
         ink: '#F9E8C8'
       },
       fontFamily: {
-        serif: ['var(--font-baskerville)', 'Georgia', 'serif'],
-        sans: ['var(--font-geist)', 'system-ui', 'sans-serif']
+        serif: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif']
       },
       borderRadius: {
         card: '16px',

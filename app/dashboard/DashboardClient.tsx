@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import Pomodoro from '@/components/Pomodoro'
 import { CandleIcon } from '@/components/CandleIcon'
 import UserMenu from '@/components/UserMenu'
@@ -16,18 +17,15 @@ export type ExamenRow = {
   planes: { id: string; bloques: { id: string; completado: boolean }[] }[]
 }
 
-const TIPO_NAMES: Record<string, string> = {
-  multiple_choice: 'Multiple choice',
-  oral: 'Oral',
-  desarrollo: 'Desarrollo',
-  integrador: 'Integrador',
-}
+export const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
 
-const DIA_LETRAS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-
-function tipoPills(tipo: string | null): string[] {
+function tipoPills(tipo: string | null, tTypes: (k: string) => string): string[] {
   if (!tipo) return []
-  return tipo.split(',').map(t => TIPO_NAMES[t.trim()] ?? t.trim()).filter(Boolean)
+  return tipo.split(',').map(t => {
+    const k = t.trim()
+    if (!k) return ''
+    return ['multiple_choice', 'oral', 'desarrollo', 'integrador'].includes(k) ? tTypes(k) : k
+  }).filter(Boolean)
 }
 
 function diasRestantes(fecha: string): number {
@@ -38,16 +36,16 @@ function diasRestantes(fecha: string): number {
   return Math.round((exam.getTime() - hoy.getTime()) / 86400000)
 }
 
-function formatFecha(fecha: string) {
+function formatFecha(fecha: string, dateLocale: string) {
   const [y, m, d] = fecha.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function saludo() {
+function saludoKey() {
   const h = new Date().getHours()
-  if (h >= 6 && h < 13) return 'Buenos días'
-  if (h >= 13 && h < 20) return 'Buenas tardes'
-  return 'Buenas noches'
+  if (h >= 6 && h < 13) return 'greeting_morning'
+  if (h >= 13 && h < 20) return 'greeting_afternoon'
+  return 'greeting_evening'
 }
 
 function progresoDe(examen: ExamenRow) {
@@ -59,6 +57,8 @@ function progresoDe(examen: ExamenRow) {
 
 /* ── Racha strip ── */
 function RachaStrip({ racha, ultimaActividad }: { racha: number; ultimaActividad: string | null }) {
+  const t = useTranslations('dashboard')
+  const DIA_LETRAS = t('week_letters').split(',')
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
   const dow = (hoy.getDay() + 6) % 7 // 0 = lunes
@@ -82,8 +82,8 @@ function RachaStrip({ racha, ultimaActividad }: { racha: number; ultimaActividad
       <CandleIcon size={13} />
       <span style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
         {racha > 0
-          ? <><strong style={{ color: 'var(--amber)', fontWeight: 600 }}>{racha} {racha === 1 ? 'día' : 'días'}</strong> estudiando seguidos</>
-          : 'Tachá tu primer bloque hoy y arrancá la racha.'}
+          ? t.rich('streak', { days: racha, strong: chunks => <strong style={{ color: 'var(--amber)', fontWeight: 600 }}>{chunks}</strong> })
+          : t('streak_empty')}
       </span>
       <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
         {DIA_LETRAS.map((letra, i) => {
@@ -108,16 +108,21 @@ function RachaStrip({ racha, ultimaActividad }: { racha: number; ultimaActividad
 
 /* ── Card de examen activo ── */
 function ExamenCard({ examen }: { examen: ExamenRow }) {
+  const t = useTranslations('dashboard')
+  const tTypes = useTranslations('types')
+  const locale = useLocale()
   const [hover, setHover] = useState(false)
   const dias = diasRestantes(examen.fecha)
   const urgente = dias >= 0 && dias < 3
   const { pct } = progresoDe(examen)
   const planId = examen.planes?.[0]?.id ?? null
   const nTemas = examen.temas?.length ?? 0
-  const pills = tipoPills(examen.tipo)
+  const pills = tipoPills(examen.tipo, tTypes)
 
-  const countdownLabel = dias < 0 ? 'Ya pasó' : dias === 0 ? 'Es hoy' : dias === 1 ? 'falta 1 día' : `faltan ${dias} días`
-  const countdownNum = dias <= 0 ? (dias === 0 ? 'Hoy' : '—') : String(dias)
+  const countdownNum = dias === 0 ? t('today') : dias < 0 ? t('passed') : String(dias)
+  const countdownLabel = dias === 0 ? null
+    : dias < 0 ? t('passed_ago', { days: -dias })
+    : dias === 1 ? t('day_left') : t('days_left')
 
   return (
     <Link href={planId ? `/plan/${planId}` : '/nuevo'} className="card"
@@ -137,20 +142,20 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-        <h3 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.25 }}>
+        <h3 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.25, minWidth: 0 }}>
           {examen.materia}
         </h3>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', minWidth: 0, overflow: 'visible' }}>
           {pills.slice(0, 2).map(p => (
             <span key={p} style={{
-              fontSize: 10, padding: '2px 8px', borderRadius: 100,
+              fontSize: 9, padding: '2px 7px', borderRadius: 100,
               background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)',
               color: 'var(--amber)', letterSpacing: '0.04em', whiteSpace: 'nowrap',
             }}>{p}</span>
           ))}
           {pills.length > 2 && (
             <span title={pills.slice(2).join(', ')} style={{
-              fontSize: 10, padding: '2px 8px', borderRadius: 100,
+              fontSize: 9, padding: '2px 7px', borderRadius: 100,
               background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)',
               color: 'var(--amber)', letterSpacing: '0.04em', whiteSpace: 'nowrap',
             }}>+{pills.length - 2}</span>
@@ -159,7 +164,7 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
       </div>
 
       <p style={{ fontSize: 12, color: 'var(--ink-muted)', marginBottom: 14, textTransform: 'capitalize' }}>
-        {formatFecha(examen.fecha)}
+        {formatFecha(examen.fecha, DATE_LOCALES[locale] ?? 'es-AR')}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
@@ -169,12 +174,14 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
         }}>
           {countdownNum}
         </span>
-        <span style={{ fontSize: 12, color: urgente ? 'var(--amber)' : 'var(--ink-muted)' }}>{countdownLabel}</span>
+        {countdownLabel && (
+          <span style={{ fontSize: 12, color: urgente ? 'var(--amber)' : 'var(--ink-muted)' }}>{countdownLabel}</span>
+        )}
       </div>
 
       <div style={{ marginTop: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <span style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Progreso</span>
+          <span style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)' }}>{t('progress')}</span>
           <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}>{pct}%</span>
         </div>
         <div className="progress-bar" style={{ marginBottom: 14 }}>
@@ -182,11 +189,11 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '0.5px solid var(--border)' }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{nTemas} {nTemas === 1 ? 'tema' : 'temas'}</span>
+          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('topics_count', { count: nTemas })}</span>
           {planId ? (
-            <span style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 500 }}>Ver plan →</span>
+            <span style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 500 }}>{t('view_plan')}</span>
           ) : (
-            <span style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>Sin plan todavía</span>
+            <span style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>{t('no_plan')}</span>
           )}
         </div>
       </div>
@@ -196,6 +203,8 @@ function ExamenCard({ examen }: { examen: ExamenRow }) {
 
 /* ── Card de examen completado ── */
 function CompletadoCard({ examen }: { examen: ExamenRow }) {
+  const t = useTranslations('dashboard')
+  const locale = useLocale()
   const nTemas = examen.temas?.length ?? 0
   const planId = examen.planes?.[0]?.id ?? null
 
@@ -209,21 +218,21 @@ function CompletadoCard({ examen }: { examen: ExamenRow }) {
           fontSize: 10, padding: '2px 8px', borderRadius: 100, whiteSpace: 'nowrap',
           background: 'var(--green-dim)', border: '0.5px solid rgba(90,158,120,0.3)', color: 'var(--green)',
         }}>
-          Completado ✓
+          {t('completed_badge')}
         </span>
       </div>
       <p style={{ fontSize: 12, color: 'var(--ink-muted)', marginBottom: 14, textTransform: 'capitalize' }}>
-        {formatFecha(examen.fecha)}
+        {formatFecha(examen.fecha, DATE_LOCALES[locale] ?? 'es-AR')}
       </p>
       <div style={{ marginTop: 'auto' }}>
         <div className="progress-bar" style={{ marginBottom: 12 }}>
           <div style={{ width: '100%', height: '100%', background: 'var(--green)', borderRadius: 2 }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{nTemas} {nTemas === 1 ? 'tema' : 'temas'}</span>
+          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('topics_count', { count: nTemas })}</span>
           {planId && (
             <Link href={`/plan/${planId}`} style={{ fontSize: 12.5, color: 'var(--ink-muted)', textDecoration: 'none' }}>
-              Ver plan →
+              {t('view_plan')}
             </Link>
           )}
         </div>
@@ -234,6 +243,7 @@ function CompletadoCard({ examen }: { examen: ExamenRow }) {
 
 /* ── Estado vacío ── */
 function EmptyState() {
+  const t = useTranslations('dashboard')
   return (
     <div style={{ textAlign: 'center', padding: '64px 24px' }}>
       <div style={{ display: 'inline-block', animation: 'floatUp 3s ease-in-out infinite', filter: 'drop-shadow(0 0 18px rgba(232,164,74,0.35))', marginBottom: 24 }}>
@@ -246,13 +256,13 @@ function EmptyState() {
         </svg>
       </div>
       <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.4rem', fontWeight: 500, color: 'var(--ink)', marginBottom: 8 }}>
-        Todo tranquilo por acá.
+        {t('empty_title')}
       </h2>
       <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: 28 }}>
-        Sin exámenes todavía. Cargá el primero y Candil arma el plan.
+        {t('empty_sub')}
       </p>
       <Link href="/nuevo" className="btn-primary">
-        Cargar mi primer examen
+        {t('empty_cta')}
       </Link>
     </div>
   )
@@ -266,6 +276,8 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
   ultimaActividad: string | null
   examenes: ExamenRow[]
 }) {
+  const t = useTranslations('dashboard')
+  const tNav = useTranslations('nav')
   const [showCompletados, setShowCompletados] = useState(false)
   const lista = examenes
 
@@ -279,7 +291,7 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
       <nav style={{
         borderBottom: '0.5px solid var(--border)', padding: '0 24px', height: 60,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(12px)', zIndex: 50,
+        position: 'sticky', top: 0, background: 'var(--nav-bg)', backdropFilter: 'blur(12px)', zIndex: 50,
       }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none' }}>
           <CandleIcon size={14} />
@@ -287,7 +299,7 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <Link href="/grupos" style={{ color: 'var(--ink-muted)', fontSize: 13, textDecoration: 'none', transition: 'color 200ms' }}>
-            Grupos
+            {tNav('groups')}
           </Link>
           <UserMenu nombre={nombre} email={email} />
         </div>
@@ -298,16 +310,14 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 600, letterSpacing: '-0.03em', marginBottom: 6 }}>
-              {saludo()}, {nombre}.
+              {t(saludoKey())}, {nombre}.
             </h1>
             <p style={{ color: 'var(--ink-muted)', fontSize: 14 }}>
-              {activos.length > 0
-                ? `Tenés ${activos.length} ${activos.length === 1 ? 'examen activo' : 'exámenes activos'}.`
-                : 'Sin exámenes activos por ahora.'}
+              {activos.length > 0 ? t('active_exams', { count: activos.length }) : t('no_active_exams')}
             </p>
           </div>
           <Link href="/nuevo" className="btn-primary" style={{ padding: '11px 22px', fontSize: '0.9rem', borderRadius: 100 }}>
-            + Nuevo examen
+            {t('new_exam')}
           </Link>
         </div>
 
@@ -318,7 +328,7 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
             {/* Próximos */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
-                Próximos exámenes
+                {t('upcoming')}
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
                 {activos.map(e => <ExamenCard key={e.id} examen={e} />)}
@@ -332,7 +342,7 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)'; e.currentTarget.style.color = 'var(--ink-faint)' }}
                 >
                   <span style={{ fontSize: 28, lineHeight: 1, fontWeight: 300 }}>+</span>
-                  <span style={{ fontSize: 13 }}>Nuevo examen</span>
+                  <span style={{ fontSize: 13 }}>{t('new_exam_card')}</span>
                 </Link>
               </div>
             </section>
@@ -346,7 +356,7 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
                     cursor: 'pointer', padding: 0, marginBottom: 16, fontFamily: 'inherit',
                   }}>
                   <span style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
-                    Completados ({completados.length})
+                    {t('completed')} ({completados.length})
                   </span>
                   <span style={{
                     fontSize: 10, color: 'var(--ink-muted)', display: 'inline-block',

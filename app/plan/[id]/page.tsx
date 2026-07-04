@@ -11,6 +11,7 @@ import PracticaSection from '@/components/PracticaSection'
 import PlusSection from '@/components/PlusSection'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
+import { useTranslations, useLocale } from 'next-intl'
 
 /* ── Types ── */
 type Bloque = {
@@ -67,24 +68,17 @@ function diffDias(fecha: string) {
   return Math.round((exam.getTime() - hoy.getTime()) / 86400000)
 }
 
-function diasRestantes(fecha: string) {
-  const diff = diffDias(fecha)
-  if (diff < 0) return 'Pasó'
-  if (diff === 0) return '¡Hoy!'
-  if (diff === 1) return 'mañana'
-  return `${diff} días`
+const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
+
+function formatFechaDia(f: string, dateLocale: string) {
+  const [y, m, d] = f.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })
 }
 
-function formatFechaDia(f: string) {
-  const [, m, d] = f.split('-')
-  const meses = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${parseInt(d)} de ${meses[parseInt(m)]}`
-}
-
-function formatFechaLarga(f: string) {
+function formatFechaLarga(f: string, dateLocale: string) {
   if (!f) return ''
   const d = new Date(f + 'T12:00:00')
-  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 const STRIPE: Record<string, string> = {
@@ -108,21 +102,14 @@ const TAG_COLOR: Record<string, string> = {
   simulacro: 'rgba(200,150,220,0.8)',
 }
 
-const TAG_LABEL: Record<string, string> = {
-  estudio: 'Estudio',
-  repaso: 'Repaso',
-  pausa: 'Pausa',
-  simulacro: 'Simulacro',
-}
-
 const MSGS = [
-  { min: 0, max: 1, txt: '"Arrancás hoy. Todo bien, vamos."' },
-  { min: 1, max: 20, txt: '"Arrancaste. Eso ya es más que ayer."' },
-  { min: 20, max: 40, txt: '"Vas bien. Cada bloque que tachás es uno menos."' },
-  { min: 40, max: 60, txt: '"Mitad del camino. La segunda mitad siempre va más rápido."' },
-  { min: 60, max: 80, txt: '"Ya estás en la recta final. No pares."' },
-  { min: 80, max: 99, txt: '"Casi. Quedan poquitos. Dale que ya llegás."' },
-  { min: 99, max: 101, txt: '"Terminaste. Ahora a dormir bien."' },
+  { min: 0, max: 1, key: 'motiv_0' },
+  { min: 1, max: 20, key: 'motiv_1' },
+  { min: 20, max: 40, key: 'motiv_2' },
+  { min: 40, max: 60, key: 'motiv_3' },
+  { min: 60, max: 80, key: 'motiv_4' },
+  { min: 80, max: 99, key: 'motiv_5' },
+  { min: 99, max: 101, key: 'motiv_6' },
 ]
 
 /* ── Helpers de matching contenido ↔ bloques DB ── */
@@ -135,6 +122,10 @@ export default function PlanPage() {
   const { id } = useParams()
   const router = useRouter()
   const supabase = createClient()
+  const t = useTranslations('plan')
+  const tCommon = useTranslations('common')
+  const locale = useLocale()
+  const dateLocale = DATE_LOCALES[locale] ?? 'es-AR'
 
   const [plan, setPlan] = useState<Plan | null>(null)
   const [bloques, setBloques] = useState<Bloque[]>([])
@@ -195,7 +186,8 @@ export default function PlanPage() {
       const sinPausa = bl.filter(b => b.tipo !== 'pausa')
       const done = sinPausa.filter(b => b.completado).length
       const pct = sinPausa.length > 0 ? Math.round(done / sinPausa.length * 100) : 0
-      setMotivMsg(MSGS.find(m => pct >= m.min && pct < m.max)?.txt ?? (planData as unknown as Plan).contenido?.consejo ?? '')
+      const motivKey = MSGS.find(m => pct >= m.min && pct < m.max)?.key
+      setMotivMsg(motivKey ? t(motivKey) : (planData as unknown as Plan).contenido?.consejo ?? '')
 
       setLoading(false)
     }
@@ -231,7 +223,7 @@ export default function PlanPage() {
     const done = sinPausa.filter(b => b.completado).length
     const pct = sinPausa.length > 0 ? Math.round(done / sinPausa.length * 100) : 0
     const msg = MSGS.find(m => pct >= m.min && pct < m.max)
-    if (msg) setMotivMsg(msg.txt)
+    if (msg) setMotivMsg(t(msg.key))
 
     // Check dia completado
     const dias = plan?.contenido?.dias ?? []
@@ -298,7 +290,7 @@ export default function PlanPage() {
     setBorrando(false)
     if (error) {
       console.error('[plan] Error eliminando examen:', error)
-      setErrorBorrar('No se pudo eliminar. Probá de nuevo.')
+      setErrorBorrar(t('delete_error'))
       return
     }
     router.push('/dashboard')
@@ -315,7 +307,7 @@ export default function PlanPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-geist-sans), sans-serif' }}>Cargando tu plan...</p>
+        <p style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-geist-sans), sans-serif' }}>{t('loading')}</p>
       </div>
     )
   }
@@ -327,8 +319,8 @@ export default function PlanPage() {
   const totalBloques = sinPausa.length
   const completados = sinPausa.filter(b => b.completado).length
   const progreso = totalBloques > 0 ? Math.round(completados / totalBloques * 100) : 0
-  const diffLabel = diasRestantes(plan.examenes.fecha)
   const diasNum = diffDias(plan.examenes.fecha)
+  const diffLabel = diasNum < 0 ? t('diff_passed') : diasNum === 0 ? t('diff_today') : diasNum === 1 ? t('diff_tomorrow') : t('diff_days', { count: diasNum })
   const totalHoras = Math.round(dias.flatMap(d => d.bloques).reduce((s, b) => s + (b.duracion_minutos || 0), 0) / 60)
   const uniqueTemas = new Set(sinPausa.map(b => b.tema)).size
 
@@ -339,7 +331,7 @@ export default function PlanPage() {
       <div style={{ filter: ajusteOpen ? 'brightness(0.45)' : 'none', transition: 'filter 400ms var(--ease-out)', pointerEvents: ajusteOpen ? 'none' : 'auto' }}>
 
       {/* ── NAV ── */}
-      <nav style={{ display: 'flex', alignItems: 'center', padding: '1rem 2rem', borderBottom: '0.5px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, background: 'rgba(21,15,7,0.92)', backdropFilter: 'blur(12px)' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', padding: '1rem 2rem', borderBottom: '0.5px solid var(--border)', position: 'sticky', top: 0, zIndex: 50, background: 'var(--nav-bg)', backdropFilter: 'blur(12px)' }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>
@@ -349,11 +341,11 @@ export default function PlanPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
           <button onClick={compartir}
             style={{ background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '7px 12px', color: 'var(--ink-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
-            <span>↗</span> Compartir
+            <span>↗</span> {t('share')}
           </button>
           <button onClick={() => esPro ? setAjusteOpen(true) : setShowUpgrade(true)}
             style={{ background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', color: 'var(--amber)', borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
-            ✦ Ajustar plan
+            ✦ {t('adjust')}
           </button>
         </div>
       </nav>
@@ -363,11 +355,11 @@ export default function PlanPage() {
         {/* ── HEADER ── */}
         <div style={{ marginBottom: '2.5rem' }}>
           <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.5rem' }}>
-            Examen · {formatFechaLarga(plan.examenes.fecha)}
+            {t('exam_on')} · {formatFechaLarga(plan.examenes.fecha, dateLocale)}
           </p>
           <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.5rem' }}>
             {plan.examenes.materia}<br />
-            <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{plan.examenes.tipo} · {plan.examenes.fecha ? new Date(plan.examenes.fecha + 'T12:00:00').toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}</em>
+            <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{plan.examenes.tipo} · {plan.examenes.fecha ? new Date(plan.examenes.fecha + 'T12:00:00').toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) : ''}</em>
           </h1>
         </div>
 
@@ -375,22 +367,22 @@ export default function PlanPage() {
         <div style={{ marginBottom: '2rem' }}>
           {diasNum > 0 && (
             <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: diasNum < 3 ? 'var(--amber)' : 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
-              {diasNum === 1 ? 'Falta 1 día' : `Faltan ${diasNum} días`}
+              {t('days_left_big', { count: diasNum })}
             </p>
           )}
           {diasNum === 0 && (
             <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--amber)' }}>
-              El examen es hoy
+              {t('today')}
             </p>
           )}
           {diasNum < 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <p style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--ink-muted)' }}>
-                Este examen pasó hace {Math.abs(diasNum)} {Math.abs(diasNum) === 1 ? 'día' : 'días'}
+                {t('passed', { count: Math.abs(diasNum) })}
               </p>
               <button onClick={archivarExamen} disabled={archivando}
                 style={{ fontFamily: 'inherit', fontSize: 12, padding: '6px 14px', borderRadius: 100, background: 'transparent', color: 'var(--ink-soft)', border: '0.5px solid var(--border-mid)', cursor: archivando ? 'wait' : 'pointer' }}>
-                {archivando ? 'Archivando…' : 'Archivar examen'}
+                {archivando ? t('archiving') : t('archive')}
               </button>
             </div>
           )}
@@ -399,9 +391,9 @@ export default function PlanPage() {
         {/* ── STATS ROW ── */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: '2rem' }}>
           {([
-            { dot: 'var(--amber)', content: <>Faltan <span style={{ color: 'var(--ink)', fontWeight: 500 }}>&nbsp;{diffLabel}</span></> },
-            { dot: 'var(--green)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{uniqueTemas} temas</span>&nbsp;a estudiar</> },
-            { dot: 'var(--ink-faint)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{totalHoras} hs</span>&nbsp;disponibles</> },
+            { dot: 'var(--amber)', content: <>{t('stat_remaining')} <span style={{ color: 'var(--ink)', fontWeight: 500 }}>&nbsp;{diffLabel}</span></> },
+            { dot: 'var(--green)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{t('stat_topics', { count: uniqueTemas })}</span>&nbsp;{t('stat_to_study')}</> },
+            { dot: 'var(--ink-faint)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{totalHoras} hs</span>&nbsp;{t('stat_available')}</> },
           ] as const).map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 100, background: 'var(--surface)', border: '0.5px solid var(--border-mid)', fontSize: 12, color: 'var(--ink-soft)' }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
@@ -413,7 +405,7 @@ export default function PlanPage() {
         {/* ── PROGRESS BAR ── */}
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Progreso del plan</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('progress')}</span>
             <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontWeight: 500, fontSize: '1rem', color: 'var(--amber)' }}>{progreso}%</span>
           </div>
           <div style={{ height: 3, background: 'var(--border-mid)', borderRadius: 100, overflow: 'hidden' }}>
@@ -452,7 +444,7 @@ export default function PlanPage() {
                 }}>
                 {dia.dia_nombre}
                 {esHoy && (
-                  <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', fontWeight: 600, letterSpacing: '0.04em' }}>Hoy</span>
+                  <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', fontWeight: 600, letterSpacing: '0.04em' }}>{t('today_pill')}</span>
                 )}
               </button>
             )
@@ -471,15 +463,15 @@ export default function PlanPage() {
             <div key={dia.fecha} style={{ animation: 'panelIn 300ms var(--ease-out) forwards' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: '1.25rem' }}>
                 <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em' }}>{dia.dia_nombre}</span>
-                <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha)}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--ink-muted)' }}>{completadosDia}/{reales.length} bloques</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha, dateLocale)}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--ink-muted)' }}>{completadosDia}/{reales.length} {t('blocks')}</span>
               </div>
 
               {/* Banner si día completo */}
               {todosCompletos && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', marginBottom: '1rem', fontSize: 13, color: 'var(--ink-soft)' }}>
                   <span style={{ color: 'var(--amber)', fontSize: 14, flexShrink: 0 }}>✦</span>
-                  <span>Día completado — tocá cualquier bloque para deshacer.</span>
+                  <span>{t('day_done_hint')}</span>
                 </div>
               )}
 
@@ -547,7 +539,7 @@ export default function PlanPage() {
                             {bloque.tema}
                           </span>
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: TAG_BG[tipo] || TAG_BG.estudio, color: TAG_COLOR[tipo] || TAG_COLOR.estudio, flexShrink: 0 }}>
-                            {TAG_LABEL[tipo] || tipo}
+                            {['estudio', 'repaso', 'pausa', 'simulacro'].includes(tipo) ? t(`tag_${tipo}`) : tipo}
                           </span>
                         </div>
                         {bloque.descripcion && (
@@ -591,20 +583,20 @@ export default function PlanPage() {
         {/* ── CONFIGURACIÓN ── */}
         <section style={{ marginTop: '4rem' }}>
           <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
-            Configuración
+            {t('config')}
           </h2>
           <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '6px 20px', marginBottom: 28 }}>
             {([
-              ['Materia', plan.examenes.materia],
-              ['Tipo', plan.examenes.tipo || '—'],
-              ['Fecha y hora', `${formatFechaLarga(plan.examenes.fecha)}${plan.examenes.hora ? ` · ${plan.examenes.hora.slice(0, 5)} hs` : ''}`],
-              ['Temas', `${uniqueTemas} ${uniqueTemas === 1 ? 'tema' : 'temas'}`],
-              ['Horas del plan', `${totalHoras} hs`],
-              ['Preferencia', plan.examenes.preferencia_horario === 'manana' ? 'Mañana' : plan.examenes.preferencia_horario === 'tarde' ? 'Tarde' : plan.examenes.preferencia_horario === 'noche' ? 'Noche' : '—'],
-            ] as const).map(([label, val], i, arr) => (
+              [t('config_subject'), plan.examenes.materia, false],
+              [t('config_type'), plan.examenes.tipo || '—', false],
+              [t('config_datetime'), `${formatFechaLarga(plan.examenes.fecha, dateLocale)}${plan.examenes.hora ? ` · ${plan.examenes.hora.slice(0, 5)} hs` : ''}`, true],
+              [t('config_topics'), t('stat_topics', { count: uniqueTemas }), false],
+              [t('config_hours'), `${totalHoras} hs`, false],
+              [t('config_pref'), plan.examenes.preferencia_horario === 'manana' ? t('pref_manana') : plan.examenes.preferencia_horario === 'tarde' ? t('pref_tarde') : plan.examenes.preferencia_horario === 'noche' ? t('pref_noche') : '—', false],
+            ] as [string, string, boolean][]).map(([label, val, capitalize], i, arr) => (
               <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 16, padding: '13px 0', borderBottom: i < arr.length - 1 ? '0.5px solid var(--border)' : 'none' }}>
                 <span style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', width: 130, flexShrink: 0 }}>{label}</span>
-                <span style={{ fontSize: 14, color: 'var(--ink)', textTransform: label === 'Fecha y hora' ? 'capitalize' : 'none' }}>{val}</span>
+                <span style={{ fontSize: 14, color: 'var(--ink)', textTransform: capitalize ? 'capitalize' : 'none' }}>{val}</span>
               </div>
             ))}
           </div>
@@ -612,18 +604,18 @@ export default function PlanPage() {
           <hr className="divider" style={{ marginBottom: 28 }} />
 
           <h3 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(235,140,120,0.7)', marginBottom: 12 }}>
-            Zona peligrosa
+            {t('danger_zone')}
           </h3>
           <div style={{ border: '0.5px solid rgba(235,140,120,0.25)', borderRadius: 12, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 4 }}>Eliminar examen</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 4 }}>{t('delete_exam')}</p>
               <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-                Se borran el examen, su plan, los bloques y los apuntes asociados. No se puede deshacer.
+                {t('delete_desc')}
               </p>
             </div>
             <button onClick={() => setConfirmarBorrar(true)}
               style={{ fontFamily: 'inherit', fontSize: 13, padding: '9px 18px', borderRadius: 100, background: 'transparent', color: 'rgba(235,140,120,0.9)', border: '0.5px solid rgba(235,140,120,0.4)', cursor: 'pointer', transition: 'all 200ms var(--ease-out)' }}>
-              Eliminar examen
+              {t('delete_exam')}
             </button>
           </div>
         </section>
@@ -647,7 +639,7 @@ export default function PlanPage() {
       {/* ── UPGRADE MODAL (apuntes) ── */}
       {showUpgrade && (
         <UpgradeModal
-          descripcion="Subí tus PDFs o fotos de apuntes y Candil genera resúmenes y preguntas de práctica desde lo que vos ya tenés."
+          descripcion={t('upgrade_notes')}
           onClose={() => setShowUpgrade(false)}
           onContinueFree={() => setShowUpgrade(false)}
         />
@@ -657,15 +649,15 @@ export default function PlanPage() {
       {showDiaDone && (
         <div
           onClick={e => { if (e.target === e.currentTarget) setShowDiaDone(null) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(6px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
+          style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(6px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
           <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border-strong)', borderRadius: 20, padding: '2.5rem 2rem', maxWidth: 360, width: '100%', textAlign: 'center', animation: 'modalIn 350ms var(--ease-out)' }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--amber-dim)', border: '0.5px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', animation: 'diaDoneGlow 2s ease-in-out infinite' }}>
               <div style={{ animation: 'glowPulse 2s ease-in-out infinite', filter: 'drop-shadow(0 0 10px rgba(232,164,74,0.5))' }}>
                 <CandleIcon size={20} />
               </div>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem' }}>Día completado.</h2>
-            <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: '0.4rem' }}>Terminaste todos los bloques de</p>
+            <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.5rem' }}>{t('day_complete')}</h2>
+            <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: '0.4rem' }}>{t('day_complete_sub')}</p>
             <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', color: 'var(--amber)', opacity: 0.8, marginBottom: '2rem' }}>{showDiaDone.nombre}</p>
             <button onClick={() => {
               const esUltimo = showDiaDone.idx >= dias.length - 1
@@ -673,7 +665,7 @@ export default function PlanPage() {
               setShowDiaDone(null)
             }}
               style={{ width: '100%', padding: 13, borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
-              {showDiaDone.idx >= dias.length - 1 ? '¡Terminaste!' : 'Seguir →'}
+              {showDiaDone.idx >= dias.length - 1 ? t('finished') : t('continue')}
             </button>
           </div>
         </div>
@@ -683,23 +675,23 @@ export default function PlanPage() {
       {confirmarBorrar && (
         <div
           onClick={e => { if (e.target === e.currentTarget && !borrando) setConfirmarBorrar(false) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(21,15,7,0.85)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
+          style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', animation: 'fadeIn 200ms var(--ease-out)' }}>
           <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border-strong)', borderRadius: 16, padding: '2rem', maxWidth: 380, width: '100%', animation: 'modalIn 300ms var(--ease-out)' }}>
             <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.3rem', fontWeight: 500, color: 'var(--ink)', marginBottom: 10 }}>
-              ¿Eliminar este examen?
+              {t('delete_confirm_title')}
             </h2>
             <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: 8 }}>
-              Vas a borrar <strong style={{ color: 'var(--ink-soft)', fontWeight: 500 }}>{plan.examenes.materia}</strong> con su plan y todos sus bloques. Esta acción no se puede deshacer.
+              {t.rich('delete_confirm_body', { materia: plan.examenes.materia, strong: chunks => <strong style={{ color: 'var(--ink-soft)', fontWeight: 500 }}>{chunks}</strong> })}
             </p>
             {errorBorrar && <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.95)', marginBottom: 10 }}>{errorBorrar}</p>}
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button onClick={() => setConfirmarBorrar(false)} disabled={borrando}
                 style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, padding: '11px', borderRadius: 100, background: 'transparent', color: 'var(--ink-muted)', border: '0.5px solid var(--border-mid)', cursor: borrando ? 'default' : 'pointer' }}>
-                Cancelar
+                {tCommon('cancel')}
               </button>
               <button onClick={eliminarExamen} disabled={borrando}
                 style={{ flex: 1, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 500, padding: '11px', borderRadius: 100, background: 'rgba(200,80,60,0.9)', color: '#fff', border: 'none', cursor: borrando ? 'wait' : 'pointer', opacity: borrando ? 0.7 : 1 }}>
-                {borrando ? 'Eliminando…' : 'Eliminar'}
+                {borrando ? t('deleting') : tCommon('delete')}
               </button>
             </div>
           </div>
@@ -715,7 +707,7 @@ export default function PlanPage() {
         opacity: toast ? 1 : 0, transition: 'all 300ms var(--ease-out)',
         zIndex: 200, whiteSpace: 'nowrap', pointerEvents: 'none',
       }}>
-        ✓ Link copiado al portapapeles
+        {t('link_copied')}
       </div>
     </div>
   )

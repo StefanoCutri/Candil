@@ -121,7 +121,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
       <nav style={{
         display: 'flex', alignItems: 'center', padding: '1rem 2rem', borderBottom: '0.5px solid var(--border)',
         position: 'sticky', top: banner ? 42 : 0, zIndex: 50,
-        background: 'rgba(21,15,7,0.92)', backdropFilter: 'blur(12px)', transition: 'top 250ms var(--ease-out)',
+        background: 'var(--nav-bg)', backdropFilter: 'blur(12px)', transition: 'top 250ms var(--ease-out)',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil

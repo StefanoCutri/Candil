@@ -21,6 +21,29 @@
   --green-dim: rgba(90, 158, 120, 0.1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --nav-bg: rgba(21, 15, 7, 0.85);
+  --overlay: rgba(21, 15, 7, 0.85);
+}
+
+[data-theme='light'] {
+  --bg: #FEFCF8;
+  --bg2: #F7F3EC;
+  --surface: #EDE8DF;
+  --surface2: #E2DCD2;
+  --amber: #C4872E;
+  --amber2: #A06D1F;
+  --amber-dim: rgba(196, 135, 46, 0.08);
+  --ink: #2A1E12;
+  --ink-soft: rgba(42, 30, 18, 0.7);
+  --ink-muted: rgba(42, 30, 18, 0.45);
+  --ink-faint: rgba(42, 30, 18, 0.15);
+  --border: rgba(42, 30, 18, 0.1);
+  --border-mid: rgba(42, 30, 18, 0.18);
+  --border-strong: rgba(42, 30, 18, 0.3);
+  --green: rgba(40, 120, 70, 0.85);
+  --green-dim: rgba(40, 120, 70, 0.08);
+  --nav-bg: rgba(254, 252, 248, 0.85);
+  --overlay: rgba(42, 30, 18, 0.45);
 }
 
 /* Landing page scope */

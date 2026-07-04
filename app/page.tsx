@@ -11,16 +11,29 @@ export default function LandingPage() {
   // Scope landing styles + cleanup on nav away
   useEffect(() => {
     document.body.classList.add('lp')
+    // Respetar el tema global guardado (candil-theme)
+    try {
+      const t = localStorage.getItem('candil-theme')
+      const efectivo = t === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        : t
+      if (efectivo === 'light') setIsLight(true)
+    } catch {}
     return () => {
       document.body.classList.remove('lp')
       document.body.classList.remove('light')
     }
   }, [])
 
-  // Light/dark toggle
+  // Light/dark toggle (sincronizado con el tema global)
   useEffect(() => {
-    if (isLight) document.body.classList.add('light')
-    else document.body.classList.remove('light')
+    if (isLight) {
+      document.body.classList.add('light')
+      document.documentElement.setAttribute('data-theme', 'light')
+    } else {
+      document.body.classList.remove('light')
+      document.documentElement.removeAttribute('data-theme')
+    }
   }, [isLight])
 
   // Scroll reveal
@@ -53,6 +66,7 @@ export default function LandingPage() {
   const toggleTheme = useCallback(() => {
     const flame = flameRef.current
     if (!flame) return
+    try { localStorage.setItem('candil-theme', isLight ? 'dark' : 'light') } catch {}
     if (isLight) {
       flame.style.opacity = '0'
       flame.style.filter = 'drop-shadow(0 0 0px rgba(232,164,74,0))'

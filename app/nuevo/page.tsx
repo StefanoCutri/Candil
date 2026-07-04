@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { CandleIcon } from '@/components/CandleIcon'
 import UpgradeModal from '@/components/UpgradeModal'
+import { useTranslations, useLocale } from 'next-intl'
 
 /* ── Types ── */
 type TipoExamen = 'multiple_choice' | 'oral' | 'desarrollo' | 'integrador'
@@ -14,46 +15,47 @@ type Tema = { id: string; nombre: string; yaloSe: boolean }
 type DiaDisp = { dia: string; diaNombre: string; horas: number; bloqueado: boolean; bloques: { inicio: string; fin: string }[] }
 
 /* ── Constants ── */
-const DIAS: { key: string; nombre: string }[] = [
-  { key: 'lunes', nombre: 'Lunes' },
-  { key: 'martes', nombre: 'Martes' },
-  { key: 'miércoles', nombre: 'Miércoles' },
-  { key: 'jueves', nombre: 'Jueves' },
-  { key: 'viernes', nombre: 'Viernes' },
-  { key: 'sábado', nombre: 'Sábado' },
-  { key: 'domingo', nombre: 'Domingo' },
+// key = valor guardado en la DB · slug = clave de traducción (sin acentos)
+const DIAS: { key: string; slug: string }[] = [
+  { key: 'lunes', slug: 'lunes' },
+  { key: 'martes', slug: 'martes' },
+  { key: 'miércoles', slug: 'miercoles' },
+  { key: 'jueves', slug: 'jueves' },
+  { key: 'viernes', slug: 'viernes' },
+  { key: 'sábado', slug: 'sabado' },
+  { key: 'domingo', slug: 'domingo' },
 ]
 
-const TIPOS: { value: TipoExamen; icon: string; name: string; desc: string }[] = [
-  { value: 'multiple_choice', icon: '⊡', name: 'Multiple choice', desc: 'Opciones predefinidas, requiere reconocimiento' },
-  { value: 'oral', icon: '◎', name: 'Oral', desc: 'Explicar y defender conceptos en voz alta' },
-  { value: 'desarrollo', icon: '≡', name: 'Desarrollo escrito', desc: 'Redactar respuestas extensas y argumentadas' },
-  { value: 'integrador', icon: '⊕', name: 'Integrador', desc: 'Combina varios formatos y unidades' },
+const TIPOS: { value: TipoExamen; icon: string }[] = [
+  { value: 'multiple_choice', icon: '⊡' },
+  { value: 'oral', icon: '◎' },
+  { value: 'desarrollo', icon: '≡' },
+  { value: 'integrador', icon: '⊕' },
 ]
 
-const PREFS: { value: Preferencia; icon: string; name: string }[] = [
-  { value: 'manana', icon: '🌅', name: 'Mañana' },
-  { value: 'tarde', icon: '☀️', name: 'Tarde' },
-  { value: 'noche', icon: '🌙', name: 'Noche' },
+const PREFS: { value: Preferencia; icon: string }[] = [
+  { value: 'manana', icon: '🌅' },
+  { value: 'tarde', icon: '☀️' },
+  { value: 'noche', icon: '🌙' },
 ]
 
-const PREF_NAMES: Record<Preferencia, string> = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' }
-const TIPO_NAMES: Record<TipoExamen, string> = {
-  multiple_choice: 'Multiple choice', oral: 'Oral',
-  desarrollo: 'Desarrollo escrito', integrador: 'Integrador',
-}
+const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
 
-function formatFecha(f: string) {
+function formatFecha(f: string, dateLocale: string) {
   if (!f) return '—'
-  const [y, m, d] = f.split('-')
-  const meses = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${parseInt(d)} de ${meses[parseInt(m)]} ${y}`
+  const [y, m, d] = f.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 /* ── Main ── */
 export default function NuevoExamenPage() {
   const router = useRouter()
   const supabase = createClient()
+  const t = useTranslations('wizard')
+  const tTypes = useTranslations('types')
+  const tCommon = useTranslations('common')
+  const locale = useLocale()
+  const dateLocale = DATE_LOCALES[locale] ?? 'es-AR'
 
   const [step, setStep] = useState(1)
   const [generando, setGenerando] = useState(false)
@@ -87,7 +89,7 @@ export default function NuevoExamenPage() {
 
   // Step 3
   const [disponibilidad, setDisponibilidad] = useState<DiaDisp[]>(
-    DIAS.map(d => ({ dia: d.key, diaNombre: d.nombre, horas: d.key === 'sábado' || d.key === 'domingo' ? 4 : 2, bloqueado: false, bloques: [] }))
+    DIAS.map(d => ({ dia: d.key, diaNombre: d.slug, horas: d.key === 'sábado' || d.key === 'domingo' ? 4 : 2, bloqueado: false, bloques: [] }))
   )
   const [preferencia, setPreferencia] = useState<Preferencia>('manana')
 
@@ -238,7 +240,7 @@ export default function NuevoExamenPage() {
       if (response.status === 429) {
         const data = await response.json().catch(() => null)
         setGenerando(false)
-        setLimiteMsg(data?.error ?? 'Llegaste al límite de tu plan.')
+        setLimiteMsg(data?.error ?? t('limit_reached'))
         return
       }
       if (!response.ok) {
@@ -254,7 +256,7 @@ export default function NuevoExamenPage() {
       const msg = e instanceof Error ? e.message : ''
       // Solo mostramos mensajes que ya vienen humanizados de la API (ej: límite de tier)
       const esHumano = msg && !/supabase|postgrest|pgrst|column|relation|violates|jwt/i.test(msg)
-      alert(esHumano ? msg : 'Algo salió mal armando tu plan. Probá de nuevo.')
+      alert(esHumano ? msg : t('generate_error'))
     }
   }
 
@@ -262,16 +264,16 @@ export default function NuevoExamenPage() {
   const totalHoras = disponibilidad.filter(d => !d.bloqueado).reduce((s, d) => s + d.horas, 0)
   const temasSabe = temas.filter(t => t.yaloSe).length
   const temasEstudiar = temas.length - temasSabe
-  const tiposLabel = tipos.map(t => TIPO_NAMES[t]).join(' + ') || '—'
+  const tiposLabel = tipos.map(v => tTypes(v)).join(' + ') || '—'
 
   const resumenRows = [
-    ['Materia', materia || '—'],
-    ['Tipo', tiposLabel],
-    ['Examen', fecha ? `${formatFecha(fecha)} · ${hora}` : '—'],
-    ['Temas', temasEstudiar > 0
-      ? `${temasEstudiar} a estudiar${temasSabe ? ` · ${temasSabe} ya los sabés` : ''}`
-      : temas.length > 0 ? `${temasSabe} ya los sabés` : '—'],
-    ['Tiempo', `${totalHoras} hs disponibles · preferís la ${PREF_NAMES[preferencia].toLowerCase()}`],
+    [t('subject'), materia || '—'],
+    [t('exam_type'), tiposLabel],
+    [t('summary_exam'), fecha ? `${formatFecha(fecha, dateLocale)} · ${hora}` : '—'],
+    [t('summary_topics'), temasEstudiar > 0
+      ? `${t('topics_to_study', { count: temasEstudiar })}${temasSabe ? ` · ${t('topics_known', { count: temasSabe })}` : ''}`
+      : temas.length > 0 ? t('topics_known', { count: temasSabe }) : '—'],
+    [t('summary_time'), t('summary_time_value', { hours: totalHoras, pref: t(`pref_${preferencia}`).toLowerCase() })],
   ]
 
   /* ── Loading state ── */
@@ -288,14 +290,14 @@ export default function NuevoExamenPage() {
           </svg>
         </div>
         <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', color: 'var(--ink)', marginBottom: '0.5rem' }}>
-          Candil está armando tu plan
+          {t('generating')}
           <span style={{ display: 'inline-flex', gap: 4, marginLeft: 2 }}>
             {[0, 0.2, 0.4].map((delay, i) => (
               <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--amber)', animation: `flameDot 1.2s ease-in-out ${delay}s infinite`, opacity: 0.3, display: 'inline-block' }} />
             ))}
           </span>
         </h2>
-        <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>Distribuyendo temas, calculando tiempos, pensando en vos.</p>
+        <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>{t('generating_sub')}</p>
       </div>
     )
   }
@@ -329,7 +331,7 @@ export default function NuevoExamenPage() {
         </div>
 
         <Link href="/dashboard" style={{ fontSize: 12, color: 'var(--ink-muted)', textDecoration: 'none', letterSpacing: '0.04em', marginLeft: 'auto', transition: 'color 200ms' }}>
-          Cancelar
+          {tCommon('cancel')}
         </Link>
       </nav>
 
@@ -340,21 +342,21 @@ export default function NuevoExamenPage() {
           {/* ── PASO 1 ── */}
           {step === 1 && (
             <>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 1 de 4</p>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>{t('step', { current: 1, total: 4 })}</p>
               <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-                ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>rendir?</em>
+                {t.rich('step1_title', { em: chunks => <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{chunks}</em>, br: () => <br /> })}
               </h1>
-              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Contanos de qué se trata el examen.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>{t('step1_sub')}</p>
 
               {/* Materia */}
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Materia</label>
-                <input className="input" value={materia} onChange={e => setMateria(e.target.value)} placeholder="Ej: Fisiología, Derecho Civil, Cálculo II" />
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>{t('subject')}</label>
+                <input className="input" value={materia} onChange={e => setMateria(e.target.value)} placeholder={t('subject_placeholder')} />
               </div>
 
               {/* Tipo */}
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Tipo de examen</label>
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>{t('exam_type')}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: '0.5rem' }}>
                   {TIPOS.map(t => {
                     const sel = tipos.includes(t.value)
@@ -382,26 +384,26 @@ export default function NuevoExamenPage() {
                           {sel && <span style={{ display: 'block', width: 7, height: 4, borderLeft: '1.5px solid #150F07', borderBottom: '1.5px solid #150F07', transform: 'rotate(-45deg) translateY(-1px)' }} />}
                         </div>
                         <span style={{ fontSize: 18, marginBottom: 8, display: 'block' }}>{t.icon}</span>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', display: 'block', marginBottom: 3 }}>{t.name}</span>
-                        <span style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{t.desc}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', display: 'block', marginBottom: 3 }}>{tTypes(t.value)}</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{tTypes(`${t.value}_desc`)}</span>
                       </button>
                     )
                   })}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Podés seleccionar más de uno.</p>
+                <p style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('multi_select_hint')}</p>
               </div>
 
               {/* Fecha + Hora */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Fecha del examen</label>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>{t('exam_date')}</label>
                   <input className="input" type="date" min={hoyStr} value={fecha} onChange={e => setFecha(e.target.value)} />
                   {fechaPasada && (
-                    <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.9)', marginTop: 6 }}>La fecha no puede ser anterior a hoy</p>
+                    <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.9)', marginTop: 6 }}>{t('date_past_error')}</p>
                   )}
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>Hora</label>
+                  <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>{t('time')}</label>
                   <input className="input" type="time" value={hora} onChange={e => setHora(e.target.value)} />
                 </div>
               </div>
@@ -410,7 +412,7 @@ export default function NuevoExamenPage() {
                 <span />
                 <button onClick={() => goTo(2)} disabled={paso1Invalido}
                   style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: paso1Invalido ? 'not-allowed' : 'pointer', opacity: paso1Invalido ? 0.5 : 1, transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
-                  Siguiente →
+                  {tCommon('next')} →
                 </button>
               </div>
             </>
@@ -419,25 +421,25 @@ export default function NuevoExamenPage() {
           {/* ── PASO 2 ── */}
           {step === 2 && (
             <>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 2 de 4</p>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>{t('step', { current: 2, total: 4 })}</p>
               <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-                ¿Qué tenés<br />que <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
+                {t.rich('step2_title', { em: chunks => <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{chunks}</em>, br: () => <br /> })}
               </h1>
-              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Agregá los temas uno por uno. Marcá los que ya sabés.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>{t('step2_sub')}</p>
 
               {/* Add tema */}
               <div style={{ display: 'flex', gap: 8, marginBottom: '1rem' }}>
-                <input ref={temaInputRef} className="input" style={{ flex: 1 }} value={nuevoTema} onChange={e => setNuevoTema(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarTema()} placeholder="Nombre del tema" />
+                <input ref={temaInputRef} className="input" style={{ flex: 1 }} value={nuevoTema} onChange={e => setNuevoTema(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarTema()} placeholder={t('topic_placeholder')} />
                 <button onClick={agregarTema}
                   style={{ padding: '12px 16px', borderRadius: 8, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', fontSize: 13, cursor: 'pointer', transition: 'all 200ms var(--ease-out)', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-                  + Agregar
+                  {t('add')}
                 </button>
               </div>
 
               {/* Temas list or empty */}
               {temas.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '2rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, color: 'var(--ink-faint)', fontSize: 13, marginBottom: '1.25rem' }}>
-                  Todavía no agregaste temas.<br />Empezá por el primero.
+                  {t.rich('no_topics_yet', { br: () => <br /> })}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '1.25rem', maxHeight: 260, overflowY: 'auto' }}>
@@ -448,7 +450,7 @@ export default function NuevoExamenPage() {
                       <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }} onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={tema.yaloSe} onChange={() => toggleYaLoSe(tema.id)}
                           style={{ width: 14, height: 14, borderRadius: 3, border: '0.5px solid var(--border-mid)', background: 'transparent', cursor: 'pointer', accentColor: 'var(--amber)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Ya lo sé</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('already_know')}</span>
                       </label>
                       <button onClick={() => deleteTema(tema.id)}
                         style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 18, padding: '0 2px', lineHeight: 1, fontFamily: 'monospace', flexShrink: 0 }}>
@@ -460,14 +462,14 @@ export default function NuevoExamenPage() {
               )}
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
-                <button onClick={() => goTo(1)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <button onClick={() => goTo(1)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← {tCommon('back')}</button>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                   <button onClick={() => goTo(3)} disabled={temas.length === 0}
                     style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: temas.length === 0 ? 'not-allowed' : 'pointer', opacity: temas.length === 0 ? 0.5 : 1, transition: 'background 200ms' }}>
-                    Siguiente →
+                    {tCommon('next')} →
                   </button>
                   {temas.length === 0 && (
-                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Agregá al menos un tema para continuar</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('min_one_topic')}</span>
                   )}
                 </div>
               </div>
@@ -477,11 +479,11 @@ export default function NuevoExamenPage() {
           {/* ── PASO 3 ── */}
           {step === 3 && (
             <>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 3 de 4</p>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>{t('step', { current: 3, total: 4 })}</p>
               <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-                ¿Cuándo podés<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>estudiar?</em>
+                {t.rich('step3_title', { em: chunks => <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{chunks}</em>, br: () => <br /> })}
               </h1>
-              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Indicá cuántas horas disponés por día.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>{t('step3_sub')}</p>
 
               {/* Days */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1.5rem' }}>
@@ -492,18 +494,18 @@ export default function NuevoExamenPage() {
                     opacity: d.bloqueado ? 0.4 : 1, transition: 'opacity 200ms, border-color 200ms',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px' }}>
-                      <span style={{ fontSize: 13, color: 'var(--ink-soft)', width: 82, flexShrink: 0 }}>{d.diaNombre}</span>
+                      <span style={{ fontSize: 13, color: 'var(--ink-soft)', width: 82, flexShrink: 0 }}>{t(`day_${d.diaNombre}`)}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
                         <input type="number" min={0} max={16} value={d.horas} disabled={d.bloqueado}
                           onChange={e => updateDia(d.dia, { horas: parseFloat(e.target.value) || 0 })}
                           style={{ width: 44, padding: '5px 6px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 13, textAlign: 'center', fontFamily: 'inherit', outline: 'none', WebkitAppearance: 'none' }} />
-                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>hs</span>
+                        <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('hours')}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
                         {/* PRO bloque button */}
                         <button onClick={() => handleAddBloque(d.dia)} disabled={d.bloqueado}
                           style={{ fontSize: 11, color: 'var(--amber)', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '3px 10px', cursor: d.bloqueado ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                          + Bloque
+                          {t('add_block')}
                         </button>
                         {!esPro && (
                           <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
@@ -525,7 +527,7 @@ export default function NuevoExamenPage() {
                               display: 'block',
                             }} />
                           </button>
-                          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>No puedo</span>
+                          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('cant_this_day')}</span>
                         </label>
                       </div>
                     </div>
@@ -535,7 +537,7 @@ export default function NuevoExamenPage() {
                       <div style={{ padding: '0 14px 11px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {d.bloques.map((b, idx) => (
                           <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, background: 'var(--amber-dim)', border: '0.5px solid var(--border)', animation: 'itemIn 250ms var(--ease-out) forwards' }}>
-                            <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, flexShrink: 0 }}>Bloque</span>
+                            <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, flexShrink: 0 }}>{t('block_label')}</span>
                             <input type="time" value={b.inicio} onChange={e => updateBloque(d.dia, idx, 'inicio', e.target.value)}
                               style={{ padding: '4px 8px', borderRadius: 6, background: 'var(--bg)', border: '0.5px solid var(--border-mid)', color: 'var(--ink)', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
                             <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>–</span>
@@ -555,7 +557,7 @@ export default function NuevoExamenPage() {
 
               {/* Preferencia */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>¿En qué momento del día rendís mejor?</label>
+                <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>{t('best_time')}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {PREFS.map(p => {
                     const sel = preferencia === p.value
@@ -568,7 +570,7 @@ export default function NuevoExamenPage() {
                           transition: 'all 200ms var(--ease-out)',
                         }}>
                         <span style={{ fontSize: 20, marginBottom: 6, display: 'block' }}>{p.icon}</span>
-                        <span style={{ fontSize: 12, color: sel ? 'var(--amber)' : 'var(--ink-soft)' }}>{p.name}</span>
+                        <span style={{ fontSize: 12, color: sel ? 'var(--amber)' : 'var(--ink-soft)' }}>{t(`pref_${p.value}`)}</span>
                       </button>
                     )
                   })}
@@ -576,14 +578,14 @@ export default function NuevoExamenPage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem' }}>
-                <button onClick={() => goTo(2)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <button onClick={() => goTo(2)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← {tCommon('back')}</button>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                   <button onClick={handleNext3} disabled={sinHoras}
                     style={{ fontFamily: 'inherit', fontSize: 14, padding: '13px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: sinHoras ? 'not-allowed' : 'pointer', opacity: sinHoras ? 0.5 : 1, transition: 'background 200ms' }}>
-                    Siguiente →
+                    {tCommon('next')} →
                   </button>
                   {sinHoras && (
-                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Al menos un día tiene que tener horas disponibles</span>
+                    <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{t('min_hours')}</span>
                   )}
                 </div>
               </div>
@@ -593,11 +595,11 @@ export default function NuevoExamenPage() {
           {/* ── PASO 4 ── */}
           {step === 4 && (
             <>
-              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>Paso 4 de 4</p>
+              <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.75rem' }}>{t('step', { current: 4, total: 4 })}</p>
               <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
-                Todo<br /><em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>listo.</em>
+                {t.rich('step4_title', { em: chunks => <em style={{ fontStyle: 'italic', color: 'var(--ink-muted)' }}>{chunks}</em>, br: () => <br /> })}
               </h1>
-              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>Revisá el resumen y generá tu plan.</p>
+              <p style={{ fontSize: 14, color: 'var(--ink-muted)', marginBottom: '2.5rem', lineHeight: 1.5 }}>{t('step4_sub')}</p>
 
               {/* Resumen grid */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '2rem' }}>
@@ -611,11 +613,11 @@ export default function NuevoExamenPage() {
 
               <button onClick={handleGenerar}
                 style={{ width: '100%', fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', fontStyle: 'italic', padding: '16px 28px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
-                Generar mi plan →
+                {t('generate')}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
-                <button onClick={() => goTo(3)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← Atrás</button>
+                <button onClick={() => goTo(3)} style={{ fontSize: 13, color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>← {tCommon('back')}</button>
                 <span />
               </div>
             </>
@@ -635,10 +637,10 @@ export default function NuevoExamenPage() {
       {/* ── UPGRADE MODAL ── */}
       {showModal && (
         <UpgradeModal
-          descripcion="Los bloques horarios personalizados te permiten decirle a Candil exactamente cuándo podés estudiar cada día."
+          descripcion={t('blocks_upsell')}
           onClose={() => setShowModal(false)}
           onContinueFree={continuarSinPro}
-          continueLabel={modalCtx === 'next' ? 'Continuar sin bloques' : 'Continuar con Free'}
+          continueLabel={modalCtx === 'next' ? t('continue_no_blocks') : t('continue_free')}
         />
       )}
     </div>
