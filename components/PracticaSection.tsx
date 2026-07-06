@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 type Pregunta = {
   tema?: string
@@ -17,6 +18,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
   esPro: boolean
   onLocked: () => void
 }) {
+  const t = useTranslations('practica')
   const [cargando, setCargando] = useState<Modo | null>(null)
   const [error, setError] = useState('')
   const [practica, setPractica] = useState<Practica | null>(null)
@@ -39,11 +41,11 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
       })
       const data = await res.json().catch(() => null)
       if (res.status === 403 && data?.code === 'pro_required') { onLocked(); return }
-      if (!res.ok) throw new Error(data?.error ?? 'Algo salió mal.')
+      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
       setPractica(data.practica as Practica)
       setModo(m)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Algo salió mal, intentá de nuevo.')
+      setError(e instanceof Error ? e.message : t('generic_error'))
     } finally {
       setCargando(null)
     }
@@ -68,7 +70,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
         <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
-          Practicá lo que estudiaste
+          {t('title')}
         </h2>
         {!esPro && (
           <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
@@ -78,11 +80,11 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
       <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button onClick={() => generar('preguntas')} disabled={cargando !== null}
           style={{ fontSize: 12.5, fontFamily: 'inherit', color: 'var(--amber)', background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '9px 16px', cursor: cargando ? 'wait' : 'pointer', opacity: cargando && cargando !== 'preguntas' ? 0.5 : 1 }}>
-          {cargando === 'preguntas' ? 'Candil está pensando…' : '✦ Preguntas de práctica'}
+          {cargando === 'preguntas' ? t('thinking') : t('questions_btn')}
         </button>
         <button onClick={() => generar('simulacro')} disabled={cargando !== null}
           style={{ fontSize: 12.5, fontFamily: 'inherit', color: 'var(--amber)', background: 'transparent', border: '0.5px solid var(--border-strong)', borderRadius: 100, padding: '9px 16px', cursor: cargando ? 'wait' : 'pointer', opacity: cargando && cargando !== 'simulacro' ? 0.5 : 1 }}>
-          {cargando === 'simulacro' ? 'Armando simulacro…' : '◷ Simulacro de examen'}
+          {cargando === 'simulacro' ? t('building_mock') : t('mock_btn')}
         </button>
       </div>
 
@@ -95,8 +97,8 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
       {!esPro && !error && (
         <button onClick={onLocked}
           style={{ width: '100%', textAlign: 'center', padding: '1.75rem 1.5rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, background: 'transparent', color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.6, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Candil te arma preguntas y un simulacro completo desde tus temas, para que llegues al examen sabiendo qué te van a tomar.
-          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>Desbloqueá con Pro →</span>
+          {t('locked_pitch')}
+          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>{t('unlock_pro')}</span>
         </button>
       )}
 
@@ -106,7 +108,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
             <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--amber)', fontStyle: 'italic' }}>{practica.titulo}</span>
             {practica.duracion_min ? <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>≈ {practica.duracion_min} min</span> : null}
             {conOpciones > 0 && reveladas.size > 0 && (
-              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ink-soft)' }}>{aciertos}/{conOpciones} correctas</span>
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ink-soft)' }}>{aciertos}/{conOpciones} {t('correct')}</span>
             )}
           </div>
 
@@ -145,7 +147,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
                       {!revelada ? (
                         <button onClick={() => revelar(i)}
                           style={{ fontSize: 12, fontFamily: 'inherit', color: 'var(--amber)', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                          Ver respuesta
+                          {t('show_answer')}
                         </button>
                       ) : (
                         <div style={{ fontSize: 12.5, color: 'var(--ink)', padding: '8px 12px', borderRadius: 8, background: 'var(--green-dim)', border: '0.5px solid rgba(90,158,120,0.3)' }}>
@@ -167,7 +169,7 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
 
           <button onClick={() => generar(modo)} disabled={cargando !== null}
             style={{ marginTop: 14, fontSize: 12, fontFamily: 'inherit', color: 'var(--ink-muted)', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '8px 16px', cursor: 'pointer' }}>
-            ↻ Generar otra ronda
+            {t('another_round')}
           </button>
         </div>
       )}

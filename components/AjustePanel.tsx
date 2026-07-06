@@ -1,15 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 
 type Mensaje = { role: 'user' | 'assistant'; content: string }
-
-const SUGERENCIAS = [
-  'No puedo estudiar mañana',
-  'Hacé los bloques más cortos',
-  'Quiero más repaso antes del examen',
-  'Movéme el simulacro de día',
-]
 
 export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
   planId: string
@@ -17,9 +11,11 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
   onClose: () => void
   onPlanUpdated: () => void
 }) {
+  const t = useTranslations('ajuste')
+  const SUGERENCIAS = [t('sug_1'), t('sug_2'), t('sug_3'), t('sug_4')]
   const [mensajes, setMensajes] = useState<Mensaje[]>([{
     role: 'assistant',
-    content: 'Contame qué querés cambiar del plan. Puedo mover temas, achicar bloques, sumar repasos — lo que necesites.',
+    content: t('greeting'),
   }])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -60,10 +56,10 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error ?? '')
-      setMensajes(prev => [...prev, { role: 'assistant', content: data.respuesta ?? 'Listo, ajusté tu plan.' }])
+      setMensajes(prev => [...prev, { role: 'assistant', content: data.respuesta ?? t('done') }])
       if (data.actualizado) onPlanUpdated()
     } catch (e) {
-      const detalle = e instanceof Error && e.message ? e.message : 'Algo salió mal, intentá de nuevo.'
+      const detalle = e instanceof Error && e.message ? e.message : t('error')
       setMensajes(prev => [...prev, { role: 'assistant', content: detalle }])
     }
     setTyping(false)
@@ -89,9 +85,9 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
         <div style={{ padding: '18px 20px', borderBottom: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <div>
             <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, color: 'var(--ink)', lineHeight: 1.2 }}>
-              Ajustar plan
+              {t('title')}
             </h2>
-            <p style={{ fontSize: 11, color: 'var(--amber)', marginTop: 2 }}>✦ Pro · Candil IA</p>
+            <p style={{ fontSize: 11, color: 'var(--amber)', marginTop: 2 }}>{t('badge')}</p>
           </div>
           <button onClick={onClose}
             style={{ marginLeft: 'auto', background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 100, width: 28, height: 28, color: 'var(--ink-muted)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 200ms' }}>
@@ -129,7 +125,7 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
           {/* Sugerencias rápidas */}
           {!primerEnvio && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-              <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 2 }}>Probá con</span>
+              <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 2 }}>{t('try_with')}</span>
               {SUGERENCIAS.map(s => (
                 <button key={s} onClick={() => enviar(s)}
                   style={{
@@ -160,7 +156,7 @@ export default function AjustePanel({ planId, open, onClose, onPlanUpdated }: {
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() }
             }}
-            placeholder="Ej: mové Parcial 2 al sábado…"
+            placeholder={t('placeholder')}
             disabled={typing}
             style={{
               flex: 1, resize: 'none', padding: '11px 14px', borderRadius: 10,

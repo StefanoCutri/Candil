@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 type Archivo = {
@@ -24,6 +25,7 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
   onLocked: () => void
 }) {
   const supabase = createClient()
+  const t = useTranslations('apuntes')
   const [archivos, setArchivos] = useState<Archivo[]>([])
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState('')
@@ -54,10 +56,10 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
       form.append('examenId', examenId)
       const res = await fetch('/api/upload-archivo', { method: 'POST', body: form })
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? 'Algo salió mal subiendo el archivo')
+      if (!res.ok) throw new Error(data?.error ?? t('upload_error'))
       setArchivos(prev => [data.archivo as Archivo, ...prev])
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : 'Algo salió mal, intentá de nuevo')
+      setError(e instanceof Error && e.message ? e.message : t('generic_error'))
     }
     setSubiendo(false)
     if (inputRef.current) inputRef.current.value = ''
@@ -73,7 +75,7 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem' }}>
         <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
-          Tus apuntes
+          {t('title')}
         </h2>
         {!esPro && (
           <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
@@ -89,7 +91,7 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
             opacity: subiendo ? 0.6 : 1, transition: 'all 200ms var(--ease-out)',
             whiteSpace: 'nowrap',
           }}>
-          {subiendo ? 'Subiendo…' : '+ Subir apunte'}
+          {subiendo ? t('uploading') : t('upload_btn')}
         </button>
         <input
           ref={inputRef}
@@ -119,12 +121,12 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)' }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-mid)' }}
         >
-          Subí tus PDFs o fotos de apuntes y Candil genera resúmenes y preguntas de práctica desde lo que vos ya tenés.
-          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>Desbloqueá con Pro →</span>
+          {t('locked_pitch')}
+          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>{t('unlock_pro')}</span>
         </button>
       ) : archivos.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '1.75rem 1.5rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, color: 'var(--ink-faint)', fontSize: 13, lineHeight: 1.6 }}>
-          Todavía no subiste apuntes para este examen.<br />PDF o fotos (JPG, PNG, WebP, HEIC).
+          {t('empty_line1')}<br />{t('empty_line2')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -135,7 +137,7 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
               <span style={{ fontSize: 11, color: 'var(--ink-faint)', flexShrink: 0 }}>{formatBytes(a.tamanio_bytes)}</span>
               <button
                 onClick={() => handleDelete(a)}
-                title="Borrar apunte"
+                title={t('delete_title')}
                 style={{ background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px', lineHeight: 1, fontFamily: 'monospace', flexShrink: 0 }}>
                 ×
               </button>

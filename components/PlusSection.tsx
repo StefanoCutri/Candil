@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 type Rama = { titulo: string; nodos: string[] }
 type Mapa = { centro: string; ramas: Rama[] }
@@ -14,18 +15,19 @@ export default function PlusSection({ examenId, esPlus, onLocked }: {
   esPlus: boolean
   onLocked: () => void
 }) {
+  const t = useTranslations('plus')
   return (
     <section style={{ marginTop: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1.25rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>Herramientas Plus</h2>
+        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>{t('title')}</h2>
         {!esPlus && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'rgba(180,120,200,0.12)', border: '0.5px solid rgba(180,120,200,0.3)', color: 'rgba(200,150,220,0.9)', letterSpacing: '0.06em', fontWeight: 500 }}>PLUS</span>}
       </div>
 
       {!esPlus ? (
         <button onClick={onLocked}
           style={{ width: '100%', textAlign: 'center', padding: '1.75rem 1.5rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, background: 'transparent', color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.6, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Mapa mental visual, chat con tus apuntes y audio resumen para repasar caminando.
-          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>Desbloqueá con Plus →</span>
+          {t('locked_pitch')}
+          <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>{t('unlock_plus')}</span>
         </button>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -40,6 +42,7 @@ export default function PlusSection({ examenId, esPlus, onLocked }: {
 
 /* ── Mapa mental ── */
 function MapaMental({ examenId }: { examenId: string }) {
+  const t = useTranslations('plus')
   const [mapa, setMapa] = useState<Mapa | null>(null)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
@@ -49,18 +52,18 @@ function MapaMental({ examenId }: { examenId: string }) {
     try {
       const res = await fetch('/api/mapa-mental', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examenId }) })
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? 'Algo salió mal.')
+      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
       setMapa(data.mapa as Mapa)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Algo salió mal.') }
+    } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
     finally { setCargando(false) }
   }
 
   return (
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: mapa ? 16 : 0, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>◓ Mapa mental</span>
+        <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t('mindmap_title')}</span>
         <button onClick={generar} disabled={cargando} style={{ ...btn, marginLeft: 'auto', cursor: cargando ? 'wait' : 'pointer' }}>
-          {cargando ? 'Armando…' : mapa ? '↻ Regenerar' : 'Generar mapa'}
+          {cargando ? t('building') : mapa ? t('regenerate') : t('generate_map')}
         </button>
       </div>
       {error && <p style={{ fontSize: 12, color: 'rgba(235,160,140,0.9)' }}>{error}</p>}
@@ -89,6 +92,7 @@ function MapaMental({ examenId }: { examenId: string }) {
 
 /* ── Chat con apuntes ── */
 function ChatApuntes({ examenId }: { examenId: string }) {
+  const t = useTranslations('plus')
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [cargando, setCargando] = useState(false)
@@ -109,16 +113,16 @@ function ChatApuntes({ examenId }: { examenId: string }) {
         body: JSON.stringify({ examenId, mensaje: texto, historial: msgs }),
       })
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? 'Algo salió mal.')
+      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
       setMsgs([...nuevoHist, { role: 'assistant', content: data.respuesta }])
       setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 50)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Algo salió mal.') }
+    } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
     finally { setCargando(false) }
   }
 
   return (
     <div style={card}>
-      <p style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500, marginBottom: 12 }}>✦ Chat con tus apuntes</p>
+      <p style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500, marginBottom: 12 }}>{t('chat_title')}</p>
       {msgs.length > 0 && (
         <div ref={scrollRef} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto', marginBottom: 12 }}>
           {msgs.map((m, i) => (
@@ -130,14 +134,14 @@ function ChatApuntes({ examenId }: { examenId: string }) {
               border: '0.5px solid var(--border)', whiteSpace: 'pre-wrap',
             }}>{m.content}</div>
           ))}
-          {cargando && <span style={{ fontSize: 12, color: 'var(--ink-muted)', fontStyle: 'italic' }}>Candil está leyendo tus apuntes…</span>}
+          {cargando && <span style={{ fontSize: 12, color: 'var(--ink-muted)', fontStyle: 'italic' }}>{t('reading_notes')}</span>}
         </div>
       )}
       {error && <p style={{ fontSize: 12, color: 'rgba(235,160,140,0.9)', marginBottom: 8 }}>{error}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <input className="input" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && enviar()}
-          placeholder="Preguntale algo a tus apuntes…" style={{ flex: 1 }} />
-        <button onClick={enviar} disabled={cargando || !input.trim()} style={{ ...btn, opacity: cargando || !input.trim() ? 0.5 : 1 }}>Enviar</button>
+          placeholder={t('chat_placeholder')} style={{ flex: 1 }} />
+        <button onClick={enviar} disabled={cargando || !input.trim()} style={{ ...btn, opacity: cargando || !input.trim() ? 0.5 : 1 }}>{t('send')}</button>
       </div>
     </div>
   )
@@ -145,6 +149,7 @@ function ChatApuntes({ examenId }: { examenId: string }) {
 
 /* ── Audio resumen ── */
 function AudioResumen({ examenId }: { examenId: string }) {
+  const t = useTranslations('plus')
   const [cargando, setCargando] = useState(false)
   const [audio, setAudio] = useState<string | null>(null)
   const [guion, setGuion] = useState('')
@@ -156,20 +161,20 @@ function AudioResumen({ examenId }: { examenId: string }) {
     try {
       const res = await fetch('/api/audio-resumen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examenId }) })
       const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? 'Algo salió mal.')
+      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
       setGuion(data.guion ?? '')
       setAudio(data.audio ?? null)
       if (data.aviso) setAviso(data.aviso)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Algo salió mal.') }
+    } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
     finally { setCargando(false) }
   }
 
   return (
     <div style={card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: guion ? 14 : 0, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>♪ Audio resumen</span>
+        <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t('audio_title')}</span>
         <button onClick={generar} disabled={cargando} style={{ ...btn, marginLeft: 'auto', cursor: cargando ? 'wait' : 'pointer' }}>
-          {cargando ? 'Generando…' : guion ? '↻ Regenerar' : 'Generar audio'}
+          {cargando ? t('generating') : guion ? t('regenerate') : t('generate_audio')}
         </button>
       </div>
       {error && <p style={{ fontSize: 12, color: 'rgba(235,160,140,0.9)' }}>{error}</p>}
