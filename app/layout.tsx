@@ -1,18 +1,21 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { NextIntlClientProvider } from 'next-intl'
-import { getLocale, getMessages } from 'next-intl/server'
+import { getLocale, getMessages, getTranslations } from 'next-intl/server'
 import './globals.css'
 import TopProgress from '@/components/TopProgress'
 
-export const metadata: Metadata = {
-  title: 'Candil — Tu plan de estudio con IA',
-  description: 'Cargá tu examen, decinos tu tiempo. Candil arma el plan. Vos estudiás.',
-  keywords: ['estudio', 'examen', 'planificación', 'IA', 'estudiantes'],
-  openGraph: {
-    title: 'Candil — Tu plan de estudio con IA',
-    description: 'Cargá tu examen, decinos tu tiempo. Candil arma el plan. Vos estudiás.',
-    type: 'website'
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('meta')
+  return {
+    title: t('title'),
+    description: t('description'),
+    keywords: t('keywords').split(','),
+    openGraph: {
+      title: t('title'),
+      description: t('description'),
+      type: 'website'
+    }
   }
 }
 

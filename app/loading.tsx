@@ -1,4 +1,7 @@
-export default function Loading() {
+import { getTranslations } from 'next-intl/server'
+
+export default async function Loading() {
+  const t = await getTranslations('common')
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
       <svg width="36" height="52" viewBox="0 0 56 80" fill="none" style={{ animation: 'flicker 2.5s ease-in-out infinite', transformOrigin: '50% 85%', filter: 'drop-shadow(0 0 14px rgba(232,164,74,0.35))' }}>
@@ -7,7 +10,7 @@ export default function Loading() {
         <rect x="21" y="55" width="14" height="18" rx="3" fill="#6B4226" />
         <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F" />
       </svg>
-      <p style={{ color: 'var(--ink-muted)', fontSize: 13 }}>Cargando…</p>
+      <p style={{ color: 'var(--ink-muted)', fontSize: 13 }}>{t('loading')}</p>
     </div>
   )
 }
