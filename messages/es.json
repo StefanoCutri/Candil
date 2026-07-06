@@ -169,7 +169,11 @@
     "pdf_col_topic": "Tema",
     "pdf_col_type": "Tipo",
     "pdf_col_duration": "Duración",
-    "pdf_footer": "Generado con Candil — candil.app"
+    "pdf_footer": "Generado con Candil — candil.app",
+    "behind_banner": "Parece que te atrasaste un poco. ¿Querés que reorganice el plan con el tiempo que queda?",
+    "regen_button": "Reorganizar plan",
+    "regen_loading": "Reorganizando tu plan...",
+    "regen_error": "No pude reorganizar el plan. Probá de nuevo."
   },
   "pomodoro": {
     "state_idle": "Listo para arrancar",

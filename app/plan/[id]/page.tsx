@@ -145,6 +145,13 @@ export default function PlanPage() {
   const [borrando, setBorrando] = useState(false)
   const [errorBorrar, setErrorBorrar] = useState('')
   const [generandoPdf, setGenerandoPdf] = useState(false)
+  const [bannerAtrasoOculto, setBannerAtrasoOculto] = useState(true)
+  const [reorganizando, setReorganizando] = useState(false)
+  const [errorReorganizar, setErrorReorganizar] = useState('')
+
+  useEffect(() => {
+    try { setBannerAtrasoOculto(sessionStorage.getItem(`candil-atraso-dismissed-${id}`) === '1') } catch { setBannerAtrasoOculto(false) }
+  }, [id])
 
   useEffect(() => {
     async function load() {
@@ -295,6 +302,38 @@ export default function PlanPage() {
       return
     }
     router.push('/dashboard')
+  }
+
+  function descartarBannerAtraso() {
+    setBannerAtrasoOculto(true)
+    try { sessionStorage.setItem(`candil-atraso-dismissed-${id}`, '1') } catch {}
+  }
+
+  async function reorganizarPlan() {
+    if (!plan || reorganizando) return
+    if (!esPro) { setShowUpgrade(true); return }
+    setReorganizando(true)
+    setErrorReorganizar('')
+    try {
+      const res = await fetch('/api/regenerar-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examenId: plan.examen_id }),
+      })
+      const data = await res.json().catch(() => null)
+      if (res.status === 403 && data?.error === 'upgrade_required') {
+        setShowUpgrade(true)
+        return
+      }
+      if (!res.ok) throw new Error(data?.error ?? t('regen_error'))
+      await refetchPlan()
+      descartarBannerAtraso()
+    } catch (e) {
+      console.error('[plan] Error reorganizando:', e)
+      setErrorReorganizar(e instanceof Error ? e.message : t('regen_error'))
+    } finally {
+      setReorganizando(false)
+    }
   }
 
   async function descargarPdf() {
@@ -465,6 +504,30 @@ export default function PlanPage() {
             {motivMsg}
           </div>
         )}
+
+        {/* ── BANNER ATRASO ── */}
+        {(() => {
+          const hoyLocal = new Date().toLocaleDateString('sv-SE')
+          const hayAtraso = bloques.some(b => b.dia < hoyLocal && !b.completado && b.tipo !== 'pausa')
+          const examenNoPaso = plan.examenes.fecha >= hoyLocal
+          if (!hayAtraso || !examenNoPaso || bannerAtrasoOculto) return null
+          return (
+            <div style={{ margin: '1.5rem 0', padding: '14px 18px', borderRadius: 10, borderLeft: '2px solid var(--amber)', background: 'var(--amber-dim)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6, flex: 1, minWidth: 200 }}>
+                {t('behind_banner')}
+              </p>
+              <button onClick={reorganizarPlan} disabled={reorganizando}
+                style={{ fontFamily: 'inherit', fontSize: 12.5, padding: '7px 14px', borderRadius: 100, background: 'transparent', color: 'var(--amber)', border: '0.5px solid var(--border-strong)', cursor: reorganizando ? 'wait' : 'pointer', flexShrink: 0, transition: 'all 200ms var(--ease-out)' }}>
+                {t('regen_button')}
+              </button>
+              <button onClick={descartarBannerAtraso} aria-label="Cerrar"
+                style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', fontSize: 16, cursor: 'pointer', padding: 4, lineHeight: 1, flexShrink: 0, fontFamily: 'inherit' }}>
+                ×
+              </button>
+              {errorReorganizar && <p style={{ fontSize: 12, color: 'rgba(235,140,120,0.95)', width: '100%' }}>{errorReorganizar}</p>}
+            </div>
+          )
+        })()}
 
         {/* ── DAY TABS ── */}
         <div style={{ display: 'flex', gap: 4, marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: 2 }}>
@@ -668,6 +731,19 @@ export default function PlanPage() {
       </div>
 
       </div>{/* /contenido oscurecible */}
+
+      {/* ── OVERLAY REORGANIZANDO ── */}
+      {reorganizando && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <svg width="36" height="52" viewBox="0 0 56 80" fill="none" style={{ animation: 'flicker 2.5s ease-in-out infinite', transformOrigin: '50% 85%', filter: 'drop-shadow(0 0 14px rgba(232,164,74,0.35))' }}>
+            <path d="M28 4C28 4 44 22 44 36C44 46 37.2 55 28 55C18.8 55 12 46 12 36C12 22 28 4 28 4Z" fill="#E8A44A" opacity="0.88" />
+            <path d="M28 16C28 16 38 29 38 37C38 43 33.5 48 28 48C22.5 48 18 43 18 37C18 29 28 16 28 16Z" fill="#F5C97A" />
+            <rect x="21" y="55" width="14" height="18" rx="3" fill="#6B4226" />
+            <rect x="14" y="70" width="28" height="6" rx="3" fill="#3D2B1F" />
+          </svg>
+          <p style={{ color: 'var(--ink-muted)', fontSize: 13 }}>{t('regen_loading')}</p>
+        </div>
+      )}
 
       {/* ── PANEL DE AJUSTE (Pro) ── */}
       {esPro && (
