@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import PerfilClient, { type PerfilExamen } from './PerfilClient'
 
 export default async function PerfilPage() {
@@ -50,7 +51,7 @@ export default async function PerfilPage() {
     return { id: e.id, materia: e.materia, fecha: e.fecha, estado: e.estado, planId: e.planes?.[0]?.id ?? null }
   })
 
-  const nombre = profile?.nombre ?? user.email?.split('@')[0] ?? 'estudiante'
+  const nombre = profile?.nombre ?? user.email?.split('@')[0] ?? (await getTranslations('common'))('student')
 
   return (
     <PerfilClient

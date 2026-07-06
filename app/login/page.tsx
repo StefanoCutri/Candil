@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 function CandleIcon() {
@@ -19,6 +20,7 @@ function CandleIcon() {
 export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
+  const t = useTranslations('auth')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +35,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Email o contraseña incorrectos. Intentá de nuevo.')
+      setError(t('login_error'))
       setLoading(false)
       return
     }
@@ -68,10 +70,10 @@ export default function LoginPage() {
       {/* Card */}
       <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
         <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
-          Bienvenido de vuelta
+          {t('login_title')}
         </h1>
         <p style={{ color: 'var(--ink-soft)', fontSize: '0.9rem', marginBottom: 28 }}>
-          Ingresá para ver tus planes de estudio.
+          {t('login_sub')}
         </p>
 
         {/* Google */}
@@ -92,33 +94,33 @@ export default function LoginPage() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Continuar con Google
+          {t('google_login')}
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <hr className="divider" style={{ flex: 1 }} />
-          <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>o</span>
+          <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>{t('or')}</span>
           <hr className="divider" style={{ flex: 1 }} />
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
-              Email
+              {t('email')}
             </label>
             <input
               type="email"
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vos@email.com"
+              placeholder={t('email_placeholder')}
               required
             />
           </div>
 
           <div>
             <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
-              Contraseña
+              {t('password')}
             </label>
             <input
               type="password"
@@ -142,15 +144,15 @@ export default function LoginPage() {
             disabled={loading}
             style={{ width: '100%', marginTop: 4, justifyContent: 'center', opacity: loading ? 0.7 : 1 }}
           >
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? t('logging_in') : t('login_btn')}
           </button>
         </form>
       </div>
 
       <p style={{ marginTop: 20, color: 'var(--ink-muted)', fontSize: '0.88rem' }}>
-        ¿No tenés cuenta?{' '}
+        {t('no_account')}{' '}
         <Link href="/registro" style={{ color: 'var(--amber)', textDecoration: 'none' }}>
-          Registrate gratis
+          {t('register_free')}
         </Link>
       </p>
     </div>

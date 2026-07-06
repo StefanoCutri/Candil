@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getTranslations } from 'next-intl/server'
 import DashboardClient, { type ExamenRow } from './DashboardClient'
 
 export default async function DashboardPage() {
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
   const nombre = profile?.nombre
     ?? user.user_metadata?.full_name
     ?? user.email?.split('@')[0]
-    ?? 'estudiante'
+    ?? (await getTranslations('common'))('student')
 
   return (
     <DashboardClient

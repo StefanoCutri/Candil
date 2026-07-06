@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import PublicoClient, { type PlanPublico } from './PublicoClient'
 
 export default async function PlanPublicoPage({ params }: { params: Promise<{ token: string }> }) {
@@ -30,7 +31,7 @@ export default async function PlanPublicoPage({ params }: { params: Promise<{ to
 
   const data: PlanPublico = {
     contenido: plan.contenido,
-    materia: examen?.materia ?? 'Plan de estudio',
+    materia: examen?.materia ?? (await getTranslations('public'))('fallback_title'),
     fecha: examen?.fecha ?? null,
     tipo: examen?.tipo ?? null,
     autor: examen?.profiles?.nombre ?? null,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations, useLocale } from 'next-intl'
 import { CandleIcon } from '@/components/CandleIcon'
 
 export type PlanPublico = {
@@ -48,22 +49,16 @@ const TAG_COLOR: Record<string, string> = {
   simulacro: 'rgba(200,150,220,0.8)',
 }
 
-const TAG_LABEL: Record<string, string> = {
-  estudio: 'Estudio',
-  repaso: 'Repaso',
-  pausa: 'Pausa',
-  simulacro: 'Simulacro',
-}
+const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
 
-function formatFechaDia(f: string) {
-  const [, m, d] = f.split('-')
-  const meses = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-  return `${parseInt(d)} de ${meses[parseInt(m)]}`
-}
-
-function formatFechaLarga(f: string) {
+function formatFechaDia(f: string, dateLocale: string) {
   const d = new Date(f + 'T12:00:00')
-  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })
+}
+
+function formatFechaLarga(f: string, dateLocale: string) {
+  const d = new Date(f + 'T12:00:00')
+  return d.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function iniciales(nombre: string) {
@@ -71,6 +66,10 @@ function iniciales(nombre: string) {
 }
 
 export default function PublicoClient({ plan }: { plan: PlanPublico }) {
+  const t = useTranslations('public')
+  const tPlan = useTranslations('plan')
+  const locale = useLocale()
+  const dateLocale = DATE_LOCALES[locale] ?? 'es-AR'
   const dias = plan.contenido?.dias ?? []
   const hoy = new Date().toISOString().split('T')[0]
   const hoyIdx = dias.findIndex(d => d.fecha === hoy)
@@ -88,7 +87,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
   if (fechaExamen) {
     const [y, m, d] = fechaExamen.split('-').map(Number)
     const diff = Math.round((new Date(y, m - 1, d).getTime() - new Date(new Date().setHours(0, 0, 0, 0)).getTime()) / 86400000)
-    diffLabel = diff < 0 ? 'Pasó' : diff === 0 ? '¡Hoy!' : diff === 1 ? 'mañana' : `${diff} días`
+    diffLabel = diff < 0 ? tPlan('diff_passed') : diff === 0 ? tPlan('diff_today') : diff === 1 ? tPlan('diff_tomorrow') : tPlan('diff_days', { count: diff })
   }
 
   return (
@@ -102,15 +101,15 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
           padding: '9px 20px', background: 'var(--amber)', color: 'var(--bg)',
         }}>
           <span style={{ fontSize: 13, fontWeight: 500 }}>
-            Este plan fue armado con Candil. Creá el tuyo gratis.
+            {t('banner')}
           </span>
           <Link href="/registro" style={{
             fontSize: 12, fontWeight: 600, color: 'var(--amber)', background: 'var(--bg)',
             padding: '5px 14px', borderRadius: 100, textDecoration: 'none', whiteSpace: 'nowrap',
           }}>
-            Empezar gratis →
+            {t('start_free')}
           </Link>
-          <button onClick={() => setBanner(false)} aria-label="Cerrar"
+          <button onClick={() => setBanner(false)} aria-label={t('close')}
             style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--bg)', fontSize: 16, cursor: 'pointer', lineHeight: 1, padding: 4, opacity: 0.7 }}>
             ✕
           </button>
@@ -127,10 +126,10 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
           <CandleIcon size={14} /> Candil
         </Link>
         <span style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginLeft: '1.5rem', paddingLeft: '1.5rem', borderLeft: '0.5px solid var(--border-mid)' }}>
-          Plan compartido
+          {t('shared_plan')}
         </span>
         <Link href="/registro" style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--amber)', textDecoration: 'none', fontWeight: 500 }}>
-          Crear mi cuenta →
+          {t('create_account')}
         </Link>
       </nav>
 
@@ -149,13 +148,13 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
                 {iniciales(plan.autor)}
               </div>
               <span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>
-                Compartido por <span style={{ color: 'var(--ink-soft)' }}>{plan.autor}</span>
+                {t.rich('shared_by', { autor: plan.autor, name: chunks => <span style={{ color: 'var(--ink-soft)' }}>{chunks}</span> })}
               </span>
             </div>
           )}
           {fechaExamen && (
             <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.65, marginBottom: '0.5rem' }}>
-              Examen · {formatFechaLarga(fechaExamen)}
+              {tPlan('exam_on')} · {formatFechaLarga(fechaExamen, dateLocale)}
             </p>
           )}
           <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
@@ -167,9 +166,9 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
         {/* ── STATS PILLS ── */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
           {([
-            ...(diffLabel ? [{ dot: 'var(--amber)', content: <>Faltan <span style={{ color: 'var(--ink)', fontWeight: 500 }}>&nbsp;{diffLabel}</span></> }] : []),
-            { dot: 'var(--green)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{uniqueTemas} temas</span>&nbsp;a estudiar</> },
-            { dot: 'var(--ink-faint)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{totalHoras} hs</span>&nbsp;distribuidas</> },
+            ...(diffLabel ? [{ dot: 'var(--amber)', content: <>{tPlan('stat_remaining')} <span style={{ color: 'var(--ink)', fontWeight: 500 }}>&nbsp;{diffLabel}</span></> }] : []),
+            { dot: 'var(--green)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{tPlan('stat_topics', { count: uniqueTemas })}</span>&nbsp;{tPlan('stat_to_study')}</> },
+            { dot: 'var(--ink-faint)', content: <><span style={{ color: 'var(--ink)', fontWeight: 500 }}>{totalHoras} hs</span>&nbsp;{t('distributed')}</> },
           ]).map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 100, background: 'var(--surface)', border: '0.5px solid var(--border-mid)', fontSize: 12, color: 'var(--ink-soft)' }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
@@ -180,8 +179,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
 
         {/* ── AVISO READONLY ── */}
         <div style={{ margin: '0 0 2rem', padding: '12px 18px', borderRadius: 10, borderLeft: '2px solid var(--border-strong)', background: 'var(--surface)', fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
-          Este es un plan de solo lectura. Para tener el tuyo y tacharlo,{' '}
-          <Link href="/registro" style={{ color: 'var(--amber)', textDecoration: 'none' }}>creá tu cuenta gratis</Link>.
+          {t.rich('readonly_notice', { link: chunks => <Link href="/registro" style={{ color: 'var(--amber)', textDecoration: 'none' }}>{chunks}</Link> })}
         </div>
 
         {/* ── RESUMEN ── */}
@@ -219,7 +217,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
             <div key={dia.fecha} style={{ animation: 'panelIn 300ms var(--ease-out) forwards' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: '1.25rem' }}>
                 <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.05rem', fontWeight: 500, letterSpacing: '-0.01em' }}>{dia.dia_nombre}</span>
-                <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha)}</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{formatFechaDia(dia.fecha, dateLocale)}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -243,7 +241,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
                             {bloque.tema}
                           </span>
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: TAG_BG[tipo] || TAG_BG.estudio, color: TAG_COLOR[tipo] || TAG_COLOR.estudio, flexShrink: 0 }}>
-                            {TAG_LABEL[tipo] || tipo}
+                            {['estudio', 'repaso', 'pausa', 'simulacro'].includes(tipo) ? tPlan(`tag_${tipo}`) : tipo}
                           </span>
                         </div>
                         {bloque.descripcion && (
@@ -268,7 +266,7 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
         {/* ── CONSEJO ── */}
         {plan.contenido?.consejo && (
           <div style={{ marginTop: '2rem', padding: '14px 18px', borderRadius: 10, background: 'var(--bg2)', border: '0.5px solid var(--border)' }}>
-            <p style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>Consejo de Candil</p>
+            <p style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>{t('tip')}</p>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6 }}>{plan.contenido.consejo}</p>
           </div>
         )}
@@ -285,13 +283,13 @@ export default function PublicoClient({ plan }: { plan: PlanPublico }) {
             </svg>
           </div>
           <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.5rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '1.5rem' }}>
-            Armá tu propio plan.
+            {t('cta_title')}
           </h2>
           <Link href="/registro" className="btn-primary" style={{ borderRadius: 100, padding: '13px 32px' }}>
-            Empezar gratis →
+            {t('start_free')}
           </Link>
           <p style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 14 }}>
-            Gratis · Sin tarjeta · 2 minutos
+            {t('cta_note')}
           </p>
         </div>
       </div>

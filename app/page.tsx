@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import './landing.css'
 
 export default function LandingPage() {
+  const t = useTranslations('landing')
+  const em = (chunks: React.ReactNode) => <em>{chunks}</em>
+  const br = () => <br />
   const [isLight, setIsLight] = useState(false)
   const flameRef = useRef<SVGSVGElement | null>(null)
 
@@ -121,12 +125,12 @@ export default function LandingPage() {
           Candil
         </Link>
         <div className="nav-links">
-          <a href="#como">Cómo funciona</a>
-          <a href="#precios">Precios</a>
-          <button className="theme-btn" onClick={toggleTheme} aria-label="Cambiar tema">
+          <a href="#como">{t('nav_how')}</a>
+          <a href="#precios">{t('nav_pricing')}</a>
+          <button className="theme-btn" onClick={toggleTheme} aria-label={t('nav_theme')}>
             {isLight ? '◑' : '☀︎'}
           </button>
-          <Link href="/registro" className="nav-cta">Empezar gratis</Link>
+          <Link href="/registro" className="nav-cta">{t('start_free')}</Link>
         </div>
       </nav>
 
@@ -160,25 +164,24 @@ export default function LandingPage() {
           </svg>
         </div>
 
-        <p className="hero-eyebrow">Tu compañero de estudio</p>
+        <p className="hero-eyebrow">{t('hero_eyebrow')}</p>
 
         <h1 className="hero-h1">
-          El plan que necesitás,<br/>
-          <em>cuando más lo necesitás.</em>
+          {t.rich('hero_title', { em, br })}
         </h1>
 
         <p className="hero-sub">
-          Contanos tu examen, tus horarios y lo que tenés que estudiar. Candil arma el plan. Vos solo tenés que estudiar.
+          {t('hero_sub')}
         </p>
 
         <div className="hero-actions">
-          <Link href="/registro" className="lp-btn">Empezar gratis</Link>
-          <a href="#como" className="lp-btn-ghost">Ver cómo funciona →</a>
+          <Link href="/registro" className="lp-btn">{t('start_free')}</Link>
+          <a href="#como" className="lp-btn-ghost">{t('see_how')}</a>
         </div>
 
         <div className="hero-scroll">
           <div className="scroll-line" />
-          <span>scrolleá</span>
+          <span>{t('scroll')}</span>
         </div>
       </section>
 
@@ -187,13 +190,12 @@ export default function LandingPage() {
         <div className="container">
           <div className="momento-grid">
             <div className="reveal">
-              <p className="momento-label">Por qué Candil</p>
+              <p className="momento-label">{t('why_label')}</p>
               <h2 className="momento-h2">
-                El estudio tiene<br/>sus propios<br/>
-                <em>momentos.</em>
+                {t.rich('why_title', { em, br })}
               </h2>
               <p className="momento-p">
-                No somos una app de productividad. Somos ese amigo que ya rindió, que sabe exactamente lo que tenés, el tiempo que te queda, y cómo distribuirlo para que llegues.
+                {t('why_body')}
               </p>
             </div>
             <div className="reveal reveal-delay-2">
@@ -205,26 +207,26 @@ export default function LandingPage() {
                     <rect x="4.5" y="16.5" width="5" height="4" rx="1" fill="#6B4226"/>
                   </svg>
                   <span className="mock-logo">Candil</span>
-                  <span className="mock-greeting">examen · lunes</span>
+                  <span className="mock-greeting">{t('mock_greeting')}</span>
                 </div>
                 <div className="mock-card">
                   <div className="mock-dot mock-dot-done" />
-                  <span className="mock-title mock-title-done">Tema 1 — Sistema nervioso</span>
-                  <span className="mock-tag mock-tag-e">Completado</span>
+                  <span className="mock-title mock-title-done">{t('mock_topic1')}</span>
+                  <span className="mock-tag mock-tag-e">{t('mock_done')}</span>
                 </div>
                 <div className="mock-card" style={{ borderColor: 'var(--border-strong)' }}>
                   <div className="mock-dot mock-dot-now" />
-                  <span className="mock-title mock-title-now">Tema 2 — Sistema endocrino</span>
-                  <span className="mock-tag mock-tag-e">Ahora</span>
+                  <span className="mock-title mock-title-now">{t('mock_topic2')}</span>
+                  <span className="mock-tag mock-tag-e">{t('mock_now')}</span>
                 </div>
                 <div className="mock-card">
                   <div className="mock-dot mock-dot-next" />
-                  <span className="mock-title">Tema 3 — Sistema digestivo</span>
-                  <span className="mock-tag mock-tag-d">Mañana</span>
+                  <span className="mock-title">{t('mock_topic3')}</span>
+                  <span className="mock-tag mock-tag-d">{t('mock_tomorrow')}</span>
                 </div>
                 <div className="mock-progress">
                   <div className="mock-bar"><div className="mock-bar-fill" /></div>
-                  <span className="mock-bar-text">2 de 7 ✓</span>
+                  <span className="mock-bar-text">{t('mock_progress')}</span>
                 </div>
               </div>
             </div>
@@ -236,27 +238,27 @@ export default function LandingPage() {
       <section className="lp-section">
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '5rem' }} className="reveal">
-            <h2 className="section-h2">Tres pasos.<br/><em>Un solo plan.</em></h2>
-            <p className="section-p">Sin complicaciones. En menos de dos minutos tenés tu plan listo para tachar.</p>
+            <h2 className="section-h2">{t.rich('steps_title', { em, br })}</h2>
+            <p className="section-p">{t('steps_sub')}</p>
           </div>
           <div className="steps">
             <div className="step reveal">
               <div className="step-accent" />
               <div className="step-num">01</div>
-              <h3 className="step-title">Cargá tu examen</h3>
-              <p className="step-desc">Materia, temas, tipo de examen y fecha. Si algunos temas ya los sabés, marcalos. Candil los descuenta.</p>
+              <h3 className="step-title">{t('step1_title')}</h3>
+              <p className="step-desc">{t('step1_desc')}</p>
             </div>
             <div className="step reveal reveal-delay-1">
               <div className="step-accent" />
               <div className="step-num">02</div>
-              <h3 className="step-title">Contanos tu tiempo</h3>
-              <p className="step-desc">Cuántas horas tenés por día. Si el sábado trabajás hasta las 3pm, también. El plan se adapta a tu vida, no al revés.</p>
+              <h3 className="step-title">{t('step2_title')}</h3>
+              <p className="step-desc">{t('step2_desc')}</p>
             </div>
             <div className="step reveal reveal-delay-2">
               <div className="step-accent" />
               <div className="step-num">03</div>
-              <h3 className="step-title">Empezá a estudiar</h3>
-              <p className="step-desc">Tu plan aparece con bloques, horarios y pausas. Tachás lo que vas haciendo. Candil te acompaña en cada momento.</p>
+              <h3 className="step-title">{t('step3_title')}</h3>
+              <p className="step-desc">{t('step3_desc')}</p>
             </div>
           </div>
         </div>
@@ -266,9 +268,9 @@ export default function LandingPage() {
       <section className="manifiesto">
         <div className="container-narrow">
           <blockquote className="reveal">
-            "Hay un momento en que solo existís vos y el apunte. Candil está ahí."
+            {t('quote')}
           </blockquote>
-          <cite className="reveal reveal-delay-1">— La idea detrás de Candil</cite>
+          <cite className="reveal reveal-delay-1">{t('quote_cite')}</cite>
         </div>
       </section>
 
@@ -276,14 +278,14 @@ export default function LandingPage() {
       <section className="lp-section">
         <div className="container">
           <div className="reveal" style={{ textAlign: 'center' }}>
-            <h2 className="section-h2">Todo lo que necesitás.<br/><em>Nada que sobre.</em></h2>
+            <h2 className="section-h2">{t.rich('features_title', { em, br })}</h2>
           </div>
           <div className="features-grid">
             {[
-              { n: '01', title: 'Plan inteligente con IA', desc: 'Distribuye temas según su peso en el examen, tus horas disponibles y tu energía. No es un calendario — es un plan que piensa.', pill: 'Gratis' },
-              { n: '02', title: 'Se adapta a tu vida real', desc: 'Trabajás el sábado hasta las 3pm, tenés clases el miércoles, un compromiso el domingo. Candil lo sabe y distribuye en consecuencia.', pill: 'Pro' },
-              { n: '03', title: 'Ajuste por chat', desc: '"Mové el digestivo para el domingo" o "tengo dos horas más el sábado". La IA reorganiza el plan al instante, sin empezar de cero.', pill: 'Pro' },
-              { n: '04', title: 'Estudio desde tus apuntes', desc: 'Subís tus PDFs o fotos de apuntes. Candil genera resúmenes, preguntas de práctica y mapas mentales desde lo que vos ya tenés.', pill: 'Pro' },
+              { n: '01', title: t('feat1_title'), desc: t('feat1_desc'), pill: t('pill_free') },
+              { n: '02', title: t('feat2_title'), desc: t('feat2_desc'), pill: 'Pro' },
+              { n: '03', title: t('feat3_title'), desc: t('feat3_desc'), pill: 'Pro' },
+              { n: '04', title: t('feat4_title'), desc: t('feat4_desc'), pill: 'Pro' },
             ].map((f, i) => (
               <div key={f.n} className={`feat-card reveal${i > 0 ? ` reveal-delay-${i}` : ''}`}>
                 <div className="feat-num">{f.n}</div>
@@ -304,28 +306,28 @@ export default function LandingPage() {
       >
         <div className="container">
           <div className="reveal" style={{ textAlign: 'center' }}>
-            <h2 className="section-h2">Simple.<br/><em>Como tiene que ser.</em></h2>
-            <p className="section-p" style={{ marginTop: '1rem' }}>Empezá gratis. Pagá solo cuando necesitás más.</p>
+            <h2 className="section-h2">{t.rich('pricing_title', { em, br })}</h2>
+            <p className="section-p" style={{ marginTop: '1rem' }}>{t('pricing_sub')}</p>
           </div>
           <div className="pricing-grid">
             {[
               {
-                tier: 'Free', name: 'Gratis', amount: '$0', period: '/mes', featured: false,
-                desc: 'Para empezar. El plan que necesitás, sin pagar nada.',
-                features: ['Plan automático con IA', 'Plan visual tachable', 'Compartir plan como link', 'Recordatorios', '1 examen a la vez'],
-                btnClass: 'price-btn price-btn-ghost', btnText: 'Empezar gratis', href: '/registro',
+                tier: t('price_free_tier'), name: t('price_free_name'), amount: '$0', period: t('per_month'), featured: false,
+                desc: t('price_free_desc'),
+                features: t('price_free_features').split('|'),
+                btnClass: 'price-btn price-btn-ghost', btnText: t('start_free'), href: '/registro',
               },
               {
-                tier: 'Más popular · Pro', name: 'Pro', amount: '$4.99', period: '/mes', featured: true,
-                desc: 'Personalización real y estudio desde tus propios apuntes.',
-                features: ['Todo lo de Free', 'Días y horarios personalizados', 'Ajuste por chat con IA', 'Subir apuntes (PDF, foto)', 'Preguntas de práctica', 'Simulacro de examen', 'Múltiples exámenes'],
-                btnClass: 'price-btn price-btn-solid', btnText: 'Empezar Pro', href: '/registro?plan=pro',
+                tier: t('price_pro_tier'), name: 'Pro', amount: '$4.99', period: t('per_month'), featured: true,
+                desc: t('price_pro_desc'),
+                features: t('price_pro_features').split('|'),
+                btnClass: 'price-btn price-btn-solid', btnText: t('start_pro'), href: '/registro?plan=pro',
               },
               {
-                tier: 'Plus', name: 'Plus', amount: '$9.99', period: '/mes', featured: false,
-                desc: 'Social, colaborativo, sin límites.',
-                features: ['Todo lo de Pro', 'Audio resumen de tus apuntes', 'Mapa mental visual', 'Chat con tus apuntes', 'Modo compañero de estudio', 'Grupos de estudio', 'Google Calendar integrado'],
-                btnClass: 'price-btn price-btn-ghost', btnText: 'Empezar Plus', href: '/registro?plan=plus',
+                tier: 'Plus', name: 'Plus', amount: '$9.99', period: t('per_month'), featured: false,
+                desc: t('price_plus_desc'),
+                features: t('price_plus_features').split('|'),
+                btnClass: 'price-btn price-btn-ghost', btnText: t('start_plus'), href: '/registro?plan=plus',
               },
             ].map((p, i) => (
               <div key={p.name} className={`price-card${p.featured ? ' featured' : ''} reveal${i > 0 ? ` reveal-delay-${i}` : ''}`}>
@@ -346,11 +348,11 @@ export default function LandingPage() {
       {/* ── CTA FINAL ── */}
       <section className="cta-final">
         <div className="container-narrow">
-          <h2 className="cta-h2 reveal">¿Tenés un examen pronto?</h2>
-          <p className="cta-sub reveal reveal-delay-1">Armá tu plan ahora. En dos minutos sabés exactamente qué estudiar y cuándo.</p>
+          <h2 className="cta-h2 reveal">{t('cta_title')}</h2>
+          <p className="cta-sub reveal reveal-delay-1">{t('cta_sub')}</p>
           <div className="reveal reveal-delay-2">
             <Link href="/registro" className="lp-btn" style={{ fontSize: '15px', padding: '16px 40px' }}>
-              Empezar gratis →
+              {t('start_free_arrow')}
             </Link>
           </div>
         </div>
@@ -366,9 +368,9 @@ export default function LandingPage() {
           Candil · 2026
         </div>
         <div className="footer-links">
-          <a href="#">Términos</a>
-          <a href="#">Privacidad</a>
-          <a href="#">Contacto</a>
+          <a href="#">{t('footer_terms')}</a>
+          <a href="#">{t('footer_privacy')}</a>
+          <a href="#">{t('footer_contact')}</a>
           <a href="#">Instagram</a>
         </div>
       </footer>
