@@ -159,7 +159,17 @@
     "day_complete_sub": "Terminaste todos los bloques de",
     "finished": "¡Terminaste!",
     "continue": "Seguir →",
-    "link_copied": "✓ Link copiado al portapapeles"
+    "link_copied": "✓ Link copiado al portapapeles",
+    "download_pdf": "Descargar PDF",
+    "pdf_generating": "Generando...",
+    "pdf_title": "Plan de estudio",
+    "pdf_date": "Fecha",
+    "pdf_time": "Hora",
+    "pdf_col_time": "Hora",
+    "pdf_col_topic": "Tema",
+    "pdf_col_type": "Tipo",
+    "pdf_col_duration": "Duración",
+    "pdf_footer": "Generado con Candil — candil.app"
   },
   "pomodoro": {
     "state_idle": "Listo para arrancar",

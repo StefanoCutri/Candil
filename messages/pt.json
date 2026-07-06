@@ -159,7 +159,17 @@
     "day_complete_sub": "Você terminou todos os blocos de",
     "finished": "Você terminou!",
     "continue": "Continuar →",
-    "link_copied": "✓ Link copiado para a área de transferência"
+    "link_copied": "✓ Link copiado para a área de transferência",
+    "download_pdf": "Baixar PDF",
+    "pdf_generating": "Gerando...",
+    "pdf_title": "Plano de estudo",
+    "pdf_date": "Data",
+    "pdf_time": "Hora",
+    "pdf_col_time": "Hora",
+    "pdf_col_topic": "Tema",
+    "pdf_col_type": "Tipo",
+    "pdf_col_duration": "Duração",
+    "pdf_footer": "Gerado com Candil — candil.app"
   },
   "pomodoro": {
     "state_idle": "Pronto para começar",

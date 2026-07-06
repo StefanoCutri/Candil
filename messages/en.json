@@ -159,7 +159,17 @@
     "day_complete_sub": "You finished all the blocks of",
     "finished": "You're done!",
     "continue": "Continue →",
-    "link_copied": "✓ Link copied to clipboard"
+    "link_copied": "✓ Link copied to clipboard",
+    "download_pdf": "Download PDF",
+    "pdf_generating": "Generating...",
+    "pdf_title": "Study plan",
+    "pdf_date": "Date",
+    "pdf_time": "Time",
+    "pdf_col_time": "Time",
+    "pdf_col_topic": "Topic",
+    "pdf_col_type": "Type",
+    "pdf_col_duration": "Duration",
+    "pdf_footer": "Generated with Candil — candil.app"
   },
   "pomodoro": {
     "state_idle": "Ready to start",

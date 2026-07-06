@@ -144,6 +144,7 @@ export default function PlanPage() {
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const [borrando, setBorrando] = useState(false)
   const [errorBorrar, setErrorBorrar] = useState('')
+  const [generandoPdf, setGenerandoPdf] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -296,6 +297,47 @@ export default function PlanPage() {
     router.push('/dashboard')
   }
 
+  async function descargarPdf() {
+    if (!plan || generandoPdf) return
+    setGenerandoPdf(true)
+    try {
+      const { exportPlanPdf } = await import('@/lib/exportPdf')
+      exportPlanPdf({
+        materia: plan.examenes.materia,
+        tipo: plan.examenes.tipo,
+        fecha: plan.examenes.fecha,
+        hora: plan.examenes.hora,
+        dias: (plan.contenido?.dias ?? []).map(d => ({
+          fecha: d.fecha,
+          dia_nombre: d.dia_nombre,
+          bloques: d.bloques.map(b => ({
+            hora_inicio: b.hora_inicio,
+            hora_fin: b.hora_fin,
+            tema: b.tema,
+            tipo: ['estudio', 'repaso', 'pausa', 'simulacro'].includes(b.tipo) ? t(`tag_${b.tipo}`) : b.tipo,
+            duracion_minutos: b.duracion_minutos,
+          })),
+        })),
+        labels: {
+          titulo: t('pdf_title'),
+          tipoExamen: t('config_type'),
+          fecha: t('pdf_date'),
+          hora: t('pdf_time'),
+          colHora: t('pdf_col_time'),
+          colTema: t('pdf_col_topic'),
+          colTipo: t('pdf_col_type'),
+          colDuracion: t('pdf_col_duration'),
+          footer: t('pdf_footer'),
+        },
+        dateLocale,
+      })
+    } catch (e) {
+      console.error('[plan] Error generando PDF:', e)
+    } finally {
+      setGenerandoPdf(false)
+    }
+  }
+
   function compartir() {
     if (!plan) return
     const url = `${window.location.origin}/p/${plan.token_publico}`
@@ -339,6 +381,10 @@ export default function PlanPage() {
           {plan.examenes.materia}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+          <button onClick={descargarPdf} disabled={generandoPdf}
+            style={{ background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '7px 12px', color: 'var(--ink-muted)', fontSize: 12, cursor: generandoPdf ? 'wait' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)', opacity: generandoPdf ? 0.6 : 1 }}>
+            <span>↓</span> {generandoPdf ? t('pdf_generating') : t('download_pdf')}
+          </button>
           <button onClick={compartir}
             style={{ background: 'none', border: '0.5px solid var(--border-mid)', borderRadius: 8, padding: '7px 12px', color: 'var(--ink-muted)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 200ms var(--ease-out)' }}>
             <span>↗</span> {t('share')}
