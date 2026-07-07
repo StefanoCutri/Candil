@@ -56,6 +56,9 @@ async function handlePOST() {
     .update({ racha_dias: racha, mejor_racha: mejor, ultima_actividad: hoyStr })
     .eq('id', user.id)
 
+  // Los logros de racha los verifica el cliente vía /api/check-logros después de
+  // esta actualización, así el toast se muestra donde el usuario está mirando.
+
   return NextResponse.json({ racha, mejor })
 }
 

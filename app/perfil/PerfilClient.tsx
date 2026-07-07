@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CandleIcon } from '@/components/CandleIcon'
 import { useTranslations, useLocale } from 'next-intl'
+import { LOGROS, NIVELES, nivelParaXp } from '@/lib/logros'
 
 const DATE_LOCALES: Record<string, string> = { es: 'es-AR', en: 'en-US', pt: 'pt-BR' }
 const IDIOMAS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português']] as const
@@ -36,11 +37,14 @@ export default function PerfilClient(props: {
   rendidos: number
   horasEstudiadas: number
   examenes: PerfilExamen[]
+  logros: string[]
+  xp: number
 }) {
   const router = useRouter()
   const supabase = createClient()
   const t = useTranslations('profile')
   const tCommon = useTranslations('common')
+  const tLogros = useTranslations('logros')
   const locale = useLocale()
   const dateLocale = DATE_LOCALES[locale] ?? 'es-AR'
 
@@ -182,6 +186,56 @@ export default function PerfilClient(props: {
                 <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500, color: 'var(--ink-muted)' }}>{s.label}</div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ── Logros ── */}
+        <section style={{ marginBottom: 40 }}>
+          <h2 style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>{tLogros('section_title')}</h2>
+
+          {/* Nivel + barra de XP */}
+          {(() => {
+            const nivel = nivelParaXp(props.xp)
+            const nivelIdx = NIVELES.findIndex(n => n.id === nivel.id)
+            const siguiente = NIVELES[nivelIdx + 1] ?? null
+            const rango = siguiente ? siguiente.xpMin - nivel.xpMin : 1
+            const pctNivel = siguiente ? Math.min(100, Math.round(((props.xp - nivel.xpMin) / rango) * 100)) : 100
+            return (
+              <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 15, fontWeight: 500, color: 'var(--amber)' }}>
+                    {tLogros.has(`nivel_${nivel.id}`) ? tLogros(`nivel_${nivel.id}`) : nivel.nombre}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--ink-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                    {props.xp} XP{siguiente ? ` · ${siguiente.xpMin - props.xp} ${tLogros('xp_to_next')}` : ''}
+                  </span>
+                </div>
+                <div style={{ height: 4, background: 'var(--border-mid)', borderRadius: 100, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pctNivel}%`, background: 'var(--amber)', borderRadius: 100, transition: 'width 600ms var(--ease-out)' }} />
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Grid de logros */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {LOGROS.map(l => {
+              const desbloqueado = props.logros.includes(l.id)
+              const nombre = tLogros.has(`${l.id}_nombre`) ? tLogros(`${l.id}_nombre`) : l.nombre
+              const desc = tLogros.has(`${l.id}_desc`) ? tLogros(`${l.id}_desc`) : l.desc
+              return (
+                <div key={l.id} style={{
+                  padding: '14px 12px', borderRadius: 12, textAlign: 'center',
+                  background: 'var(--surface)', border: `0.5px solid ${desbloqueado ? 'var(--border-strong)' : 'var(--border)'}`,
+                  opacity: desbloqueado ? 1 : 0.3,
+                }}>
+                  <div style={{ fontSize: 24, marginBottom: 8, filter: desbloqueado ? 'none' : 'grayscale(1)' }}>{l.icon}</div>
+                  <p style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--ink)', marginBottom: 4 }}>{nombre}</p>
+                  <p style={{ fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.4 }}>{desbloqueado ? desc : '???'}</p>
+                  {desbloqueado && <p style={{ fontSize: 10, color: 'var(--amber)', marginTop: 6 }}>+{l.xp} XP</p>}
+                </div>
+              )
+            })}
           </div>
         </section>
 

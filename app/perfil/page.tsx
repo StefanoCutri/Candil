@@ -64,6 +64,8 @@ export default async function PerfilPage() {
       rendidos={rendidos}
       horasEstudiadas={Math.round(horasEstudiadas)}
       examenes={lista}
+      logros={Array.isArray(profile?.logros) ? profile.logros : []}
+      xp={profile?.xp ?? 0}
     />
   )
 }

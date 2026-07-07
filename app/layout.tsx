@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages, getTranslations } from 'next-intl/server'
 import './globals.css'
 import TopProgress from '@/components/TopProgress'
+import LogroToast from '@/components/LogroToast'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('meta')
@@ -34,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <TopProgress />{children}
+          <TopProgress />{children}<LogroToast />
         </NextIntlClientProvider>
       </body>
     </html>

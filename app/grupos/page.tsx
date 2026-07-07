@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { CandleIcon } from '@/components/CandleIcon'
+import { verificarLogros } from '@/lib/logrosClient'
 
 type Grupo = { id: string; nombre: string; codigo: string; miembros: number }
 
@@ -40,6 +41,7 @@ export default function GruposPage() {
       const data = await res.json().catch(() => null)
       if (res.status === 403 && data?.code === 'plus_required') { setBloqueado(true); return }
       if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
+      if (action === 'unirse') await verificarLogros('unirse_grupo')
       router.push(`/grupos/${data.grupoId}`)
     } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
     finally { setBusy(false) }

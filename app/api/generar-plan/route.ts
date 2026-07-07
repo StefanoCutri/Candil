@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { checkGenerationLimit } from '@/lib/tierLimits'
+import { checkLogros } from '@/lib/checkLogros'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -286,6 +287,9 @@ Reglas:
     }
     console.log('[generar-plan] Bloques insertados:', bloques.length, 'para plan', plan.id)
   }
+
+  // Logros de generación (best-effort; el toast se pierde en el redirect pero quedan guardados)
+  try { await checkLogros(supabase, user.id, 'generar_plan') } catch (e) { console.error('[generar-plan] checkLogros:', e) }
 
   return NextResponse.json({ planId: plan.id })
 }

@@ -12,6 +12,7 @@ import PlusSection from '@/components/PlusSection'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
 import { useTranslations, useLocale } from 'next-intl'
+import { verificarLogros } from '@/lib/logrosClient'
 
 /* ── Types ── */
 type Bloque = {
@@ -226,6 +227,36 @@ export default function PlanPage() {
       fetch('/api/update-racha', { method: 'POST' }).catch(() => {})
     }
 
+    // Verificar logros al completar (best-effort, muestra toast si desbloquea)
+    if (nuevo) {
+      const sinPausaAll = next.filter(b => b.tipo !== 'pausa')
+      const doneAll = sinPausaAll.filter(b => b.completado).length
+      const progresoNuevo = sinPausaAll.length > 0 ? Math.round(doneAll / sinPausaAll.length * 100) : 0
+
+      const diaActual = plan?.contenido?.dias?.[diIdx]
+      const realesDelDia = diaActual
+        ? next.filter(b => b.dia === diaActual.fecha && b.tipo !== 'pausa').sort((a, b) => a.orden - b.orden)
+        : []
+      const diaCompleto = realesDelDia.length > 0 && realesDelDia.every(b => b.completado)
+
+      // 3 bloques seguidos sin saltar: una corrida de 3 completados consecutivos en el día
+      let tresSeguidos = false
+      let corrida = 0
+      for (const b of realesDelDia) {
+        corrida = b.completado ? corrida + 1 : 0
+        if (corrida >= 3) { tresSeguidos = true; break }
+      }
+
+      verificarLogros('completar_bloque', {
+        hora: new Date().getHours(),
+        diaCompleto,
+        tresSeguidos,
+        progreso: progresoNuevo,
+      })
+      // La racha se actualiza en paralelo; chequear sus logros un toque después
+      setTimeout(() => verificarLogros('racha'), 1500)
+    }
+
     // Update progress message
     const sinPausa = next.filter(b => b.tipo !== 'pausa')
     const done = sinPausa.filter(b => b.completado).length
@@ -381,6 +412,7 @@ export default function PlanPage() {
     if (!plan) return
     const url = `${window.location.origin}/p/${plan.token_publico}`
     navigator.clipboard.writeText(url).catch(() => {})
+    verificarLogros('compartir')
     setToast(true)
     setTimeout(() => setToast(false), 2500)
   }
