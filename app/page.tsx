@@ -101,7 +101,7 @@ export default function LandingPage() {
   return (
     <>
       {/* ── NAV ── */}
-      <nav>
+      <nav className="landing-nav">
         <Link href="/" className="nav-logo">
           <div className="candle-wrap">
             <svg className="candle-dark" width="18" height="30" viewBox="0 0 18 30" fill="none">

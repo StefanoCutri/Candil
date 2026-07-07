@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import PasswordInput from '@/components/PasswordInput'
 
 function CandleIcon() {
   return (
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [saliendo, setSaliendo] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -67,8 +69,8 @@ export default function LoginPage() {
         <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
       </Link>
 
-      {/* Card */}
-      <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
+      {/* Card — se desvanece al navegar a registro para dar feedback */}
+      <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px', opacity: saliendo ? 0.4 : 1, transform: saliendo ? 'translateY(6px)' : 'none', transition: 'opacity 300ms var(--ease-out), transform 300ms var(--ease-out)', pointerEvents: saliendo ? 'none' : 'auto' }}>
         <h1 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--ink)', fontSize: '1.5rem', marginBottom: 6 }}>
           {t('login_title')}
         </h1>
@@ -122,14 +124,7 @@ export default function LoginPage() {
             <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
               {t('password')}
             </label>
-            <input
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
+            <PasswordInput value={password} onChange={setPassword} />
           </div>
 
           {error && (
@@ -151,8 +146,8 @@ export default function LoginPage() {
 
       <p style={{ marginTop: 20, color: 'var(--ink-muted)', fontSize: '0.88rem' }}>
         {t('no_account')}{' '}
-        <Link href="/registro" style={{ color: 'var(--amber)', textDecoration: 'none' }}>
-          {t('register_free')}
+        <Link href="/registro" onClick={() => setSaliendo(true)} style={{ color: 'var(--amber)', textDecoration: 'none' }}>
+          {saliendo ? t('switching') : t('register_free')}
         </Link>
       </p>
     </div>

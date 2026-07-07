@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import PasswordInput from '@/components/PasswordInput'
 
 function CandleIcon() {
   return (
@@ -28,6 +29,7 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [saliendo, setSaliendo] = useState(false)
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
@@ -83,7 +85,7 @@ export default function RegistroPage() {
         <span style={{ fontFamily: 'var(--font-geist-sans), sans-serif', color: 'var(--amber)', fontSize: '1.3rem', fontWeight: 700 }}>Candil</span>
       </Link>
 
-      <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px' }}>
+      <div className="card" style={{ width: '100%', maxWidth: 400, padding: '36px 32px', opacity: saliendo ? 0.4 : 1, transform: saliendo ? 'translateY(6px)' : 'none', transition: 'opacity 300ms var(--ease-out), transform 300ms var(--ease-out)', pointerEvents: saliendo ? 'none' : 'auto' }}>
         {success ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><CandleIcon /></div>
@@ -158,15 +160,7 @@ export default function RegistroPage() {
                 <label style={{ display: 'block', color: 'var(--ink-soft)', fontSize: '0.85rem', marginBottom: 6 }}>
                   {t('password')}
                 </label>
-                <input
-                  type="password"
-                  className="input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('password_placeholder')}
-                  minLength={8}
-                  required
-                />
+                <PasswordInput value={password} onChange={setPassword} placeholder={t('password_placeholder')} minLength={8} />
               </div>
 
               {error && (
@@ -190,8 +184,8 @@ export default function RegistroPage() {
 
       <p style={{ marginTop: 20, color: 'var(--ink-muted)', fontSize: '0.88rem' }}>
         {t('have_account')}{' '}
-        <Link href="/login" style={{ color: 'var(--amber)', textDecoration: 'none' }}>
-          {t('login_link')}
+        <Link href="/login" onClick={() => setSaliendo(true)} style={{ color: 'var(--amber)', textDecoration: 'none' }}>
+          {saliendo ? t('switching') : t('login_link')}
         </Link>
       </p>
     </div>

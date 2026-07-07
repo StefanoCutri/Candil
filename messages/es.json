@@ -173,7 +173,9 @@
     "behind_banner": "Parece que te atrasaste un poco. ¿Querés que reorganice el plan con el tiempo que queda?",
     "regen_button": "Reorganizar plan",
     "regen_loading": "Reorganizando tu plan...",
-    "regen_error": "No pude reorganizar el plan. Probá de nuevo."
+    "regen_error": "No pude reorganizar el plan. Probá de nuevo.",
+    "plan_finished_btn": "¡Terminaste el plan!",
+    "plan_complete_msg": "Completaste todo el plan. Ahora a descansar y confiar."
   },
   "pomodoro": {
     "state_idle": "Listo para arrancar",
@@ -321,7 +323,8 @@
     "creating_account": "Creando cuenta...",
     "register_btn": "Crear mi cuenta",
     "have_account": "¿Ya tenés cuenta?",
-    "login_link": "Ingresá"
+    "login_link": "Ingresá",
+    "switching": "Un segundo..."
   },
   "groups": {
     "title": "Grupos de estudio",

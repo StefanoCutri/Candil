@@ -1,12 +1,12 @@
 /* ── NAV ── */
-nav {
+nav.landing-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center;
   padding: 1.25rem 2.5rem;
   background: linear-gradient(to bottom, rgba(21,15,7,0.92) 0%, transparent 100%);
   transition: background 500ms;
 }
-body.light nav { background: linear-gradient(to bottom, rgba(245,238,227,0.95) 0%, transparent 100%); }
+body.light nav.landing-nav { background: linear-gradient(to bottom, rgba(245,238,227,0.95) 0%, transparent 100%); }
 
 .nav-logo {
   display: flex; align-items: center; gap: 10px;

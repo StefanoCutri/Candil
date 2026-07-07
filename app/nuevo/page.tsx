@@ -306,7 +306,7 @@ export default function NuevoExamenPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)', display: 'flex', flexDirection: 'column', fontWeight: 300 }}>
 
       {/* ── NAV ── */}
-      <nav style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 2rem', borderBottom: '0.5px solid var(--border)', flexShrink: 0, position: 'relative' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 2rem', borderBottom: '0.5px solid var(--border)', flexShrink: 0, position: 'relative', background: 'var(--bg)' }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1rem', color: 'var(--ink)', textDecoration: 'none' }}>
           <CandleIcon size={14} /> Candil
         </Link>

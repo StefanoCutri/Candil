@@ -173,7 +173,9 @@
     "behind_banner": "Looks like you fell a bit behind. Want me to reorganize the plan with the time you have left?",
     "regen_button": "Reorganize plan",
     "regen_loading": "Reorganizing your plan...",
-    "regen_error": "I couldn't reorganize the plan. Try again."
+    "regen_error": "I couldn't reorganize the plan. Try again.",
+    "plan_finished_btn": "You finished the plan!",
+    "plan_complete_msg": "You completed the whole plan. Now rest and trust yourself."
   },
   "pomodoro": {
     "state_idle": "Ready to start",
@@ -321,7 +323,8 @@
     "creating_account": "Creating account...",
     "register_btn": "Create my account",
     "have_account": "Already have an account?",
-    "login_link": "Log in"
+    "login_link": "Log in",
+    "switching": "One sec..."
   },
   "groups": {
     "title": "Study groups",

@@ -530,8 +530,22 @@ export default function PlanPage() {
           </div>
         </div>
 
+        {/* ── PLAN COMPLETO ── */}
+        {progreso >= 100 && totalBloques > 0 && (
+          <div style={{ margin: '1.5rem 0', padding: '18px 20px', borderRadius: 12, border: '0.5px solid var(--border-strong)', background: 'var(--amber-dim)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>🏆</span>
+            <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6, flex: 1, minWidth: 200 }}>
+              {t('plan_complete_msg')}
+            </p>
+            <button onClick={archivarExamen} disabled={archivando}
+              style={{ fontFamily: 'inherit', fontSize: 13, padding: '9px 18px', borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', cursor: archivando ? 'wait' : 'pointer', flexShrink: 0 }}>
+              {archivando ? t('archiving') : t('archive')}
+            </button>
+          </div>
+        )}
+
         {/* ── MENSAJE MOTIVACIONAL ── */}
-        {motivMsg && (
+        {motivMsg && progreso < 100 && (
           <div style={{ margin: '1.5rem 0', padding: '14px 18px', borderRadius: 10, borderLeft: '2px solid var(--amber)', background: 'var(--amber-dim)', fontSize: 13, color: 'var(--ink-soft)', fontStyle: 'italic', lineHeight: 1.6 }}>
             {motivMsg}
           </div>
@@ -540,9 +554,16 @@ export default function PlanPage() {
         {/* ── BANNER ATRASO ── */}
         {(() => {
           const hoyLocal = new Date().toLocaleDateString('sv-SE')
+          // Atrasado = hay días PASADOS con bloques reales sin completar (las pausas no cuentan)
           const hayAtraso = bloques.some(b => b.dia < hoyLocal && !b.completado && b.tipo !== 'pausa')
           const examenNoPaso = plan.examenes.fecha >= hoyLocal
-          if (!hayAtraso || !examenNoPaso || bannerAtrasoOculto) return null
+          // Además, el progreso general tiene que venir por debajo de lo esperado
+          // según los días transcurridos (con un 20% de tolerancia)
+          const diasTotales = dias.length
+          const diasPasados = dias.filter(d => d.fecha < hoyLocal).length
+          const progresoEsperado = diasTotales > 0 ? (diasPasados / diasTotales) * 100 : 0
+          const vieneAtrasado = progreso < progresoEsperado * 0.8
+          if (!hayAtraso || !vieneAtrasado || !examenNoPaso || bannerAtrasoOculto) return null
           return (
             <div style={{ margin: '1.5rem 0', padding: '14px 18px', borderRadius: 10, borderLeft: '2px solid var(--amber)', background: 'var(--amber-dim)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.6, flex: 1, minWidth: 200 }}>
@@ -819,7 +840,7 @@ export default function PlanPage() {
               setShowDiaDone(null)
             }}
               style={{ width: '100%', padding: 13, borderRadius: 100, background: 'var(--amber)', color: 'var(--bg)', border: 'none', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer', transition: 'background 200ms, transform 150ms var(--ease-out)' }}>
-              {showDiaDone.idx >= dias.length - 1 ? t('finished') : t('continue')}
+              {showDiaDone.idx >= dias.length - 1 ? t('plan_finished_btn') : t('continue')}
             </button>
           </div>
         </div>
