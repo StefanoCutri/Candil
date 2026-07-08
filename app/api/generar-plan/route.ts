@@ -5,6 +5,7 @@ import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { checkGenerationLimit } from '@/lib/tierLimits'
 import { checkLogros } from '@/lib/checkLogros'
+import { isUuid, sanitizeText, wrapUserInput, PROMPT_GUARD, checkRateLimit, RATE_LIMIT_MSG, MAX_LEN } from '@/lib/security'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -38,8 +39,13 @@ async function generarPlan(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { examenId } = await request.json()
-  if (!examenId) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
+  if (!checkRateLimit(user.id, 'generar-plan')) {
+    return NextResponse.json({ error: RATE_LIMIT_MSG }, { status: 429 })
+  }
+
+  const body = await request.json().catch(() => null)
+  const examenId = body?.examenId
+  if (!isUuid(examenId)) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
 
   const { data: examen, error: examenError } = await supabase
     .from('examenes')
@@ -90,7 +96,7 @@ async function generarPlan(request: Request) {
   }
 
   const prompt = `
-Materia: ${examen.materia}
+Materia: ${wrapUserInput(sanitizeText(examen.materia, MAX_LEN.materia))}
 Tipo de examen: ${examen.tipo}
 Fecha del examen: ${examen.fecha}
 Hora del examen: ${examen.hora ?? 'no especificada'}
@@ -98,7 +104,7 @@ Preferencia horaria: ${examen.preferencia_horario}
 
 Temas a estudiar:
 ${(examen.temas ?? []).map((t: { nombre: string; ya_lo_se: boolean; peso: number | null }, i: number) =>
-  `${i + 1}. ${t.nombre}${t.ya_lo_se ? ' [YA LO SÉ]' : ''}${t.peso ? ` (peso: ${t.peso}%)` : ''}`
+  `${i + 1}. ${wrapUserInput(sanitizeText(t.nombre, MAX_LEN.tema))}${t.ya_lo_se ? ' [YA LO SÉ]' : ''}${t.peso ? ` (peso: ${t.peso}%)` : ''}`
 ).join('\n')}
 
 Disponibilidad horaria:
@@ -152,7 +158,9 @@ Reglas:
 - El último día antes del examen es solo repaso general y simulacro, no contenido nuevo
 - Los bloques en el horario preferido del usuario son los más densos
 - Tono cálido en descripciones y mensajes, como un amigo que te acompaña
-- Respondé SOLO con el JSON, sin texto adicional, sin markdown, sin backticks`,
+- Respondé SOLO con el JSON, sin texto adicional, sin markdown, sin backticks
+
+${PROMPT_GUARD}`,
       messages: [{ role: 'user', content: prompt }]
     })
   } catch (e) {

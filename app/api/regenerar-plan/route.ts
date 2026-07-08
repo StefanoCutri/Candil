@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { checkGenerationLimit } from '@/lib/tierLimits'
+import { isUuid, sanitizeText, wrapUserInput, PROMPT_GUARD, checkRateLimit, RATE_LIMIT_MSG, MAX_LEN } from '@/lib/security'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -34,8 +35,13 @@ async function regenerarPlan(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const { examenId } = await request.json()
-  if (!examenId) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
+  if (!checkRateLimit(user.id, 'regenerar-plan')) {
+    return NextResponse.json({ error: RATE_LIMIT_MSG }, { status: 429 })
+  }
+
+  const body = await request.json().catch(() => null)
+  const examenId = body?.examenId
+  if (!isUuid(examenId)) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
 
   // Solo Pro y Plus
   const { data: profileTier } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
@@ -97,7 +103,7 @@ async function regenerarPlan(request: Request) {
     .filter((d: { bloqueado: boolean; dia: string }) => !d.bloqueado && d.dia >= hoyStr)
 
   const prompt = `
-Materia: ${examen.materia}
+Materia: ${wrapUserInput(sanitizeText(examen.materia, MAX_LEN.materia))}
 Tipo de examen: ${examen.tipo}
 Fecha del examen: ${examen.fecha}
 Hora del examen: ${examen.hora ?? 'no especificada'}
@@ -105,7 +111,7 @@ Preferencia horaria: ${examen.preferencia_horario}
 Hoy es: ${hoyStr}
 
 El estudiante se atrasó. Estos son los temas que le quedan pendientes (NO incluir los que ya completó):
-${temasPendientes.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+${temasPendientes.map((t, i) => `${i + 1}. ${wrapUserInput(sanitizeText(String(t), MAX_LEN.tema))}`).join('\n')}
 
 Bloques que YA completó y que se mantienen (no los repitas):
 ${completados.map(b => `- ${b.dia} ${String(b.hora_inicio).slice(0, 5)}: ${b.tema}`).join('\n') || '(ninguno)'}
@@ -151,7 +157,9 @@ Reglas:
 - Incluí pausas de 15-20 min cada 1.5-2 horas de estudio
 - El último día antes del examen es repaso general y simulacro
 - Tono cálido, como un amigo que te acompaña sin juzgarte
-- Respondé SOLO con el JSON, sin texto adicional, sin markdown, sin backticks`,
+- Respondé SOLO con el JSON, sin texto adicional, sin markdown, sin backticks
+
+${PROMPT_GUARD}`,
       messages: [{ role: 'user', content: prompt }],
     })
   } catch (e) {

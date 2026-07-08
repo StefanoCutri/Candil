@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isUuid, sanitizeText, wrapUserInput, PROMPT_GUARD, checkRateLimit, RATE_LIMIT_MSG, MAX_LEN } from '@/lib/security'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -29,8 +30,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Preguntas de práctica y simulacro son features Pro.', code: 'pro_required' }, { status: 403 })
   }
 
-  const { examenId, modo } = await request.json() as { examenId: string; modo: 'preguntas' | 'simulacro' }
-  if (!examenId) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
+  if (!checkRateLimit(user.id, 'practica')) {
+    return NextResponse.json({ error: RATE_LIMIT_MSG }, { status: 429 })
+  }
+
+  const body = await request.json().catch(() => null) as { examenId?: unknown; modo?: unknown } | null
+  const examenId = body?.examenId
+  const modo = body?.modo === 'simulacro' ? 'simulacro' : 'preguntas'
+  if (!isUuid(examenId)) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
 
   const { data: examen } = await supabase
     .from('examenes')
@@ -46,11 +53,12 @@ export async function POST(request: Request) {
   }
 
   const esSimulacro = modo === 'simulacro'
-  const listaTemas = temas.map(t => `- ${t.nombre}`).join('\n')
+  const materiaSegura = wrapUserInput(sanitizeText(examen.materia, MAX_LEN.materia))
+  const listaTemas = temas.map(t => `- ${wrapUserInput(sanitizeText(t.nombre, MAX_LEN.tema))}`).join('\n')
 
   const instruccion = esSimulacro
-    ? `Generá un SIMULACRO de examen completo de "${examen.materia}" (tipo: ${examen.tipo}). Entre 8 y 12 preguntas que cubran todos los temas, con dificultad realista de examen. Si el tipo incluye "multiple_choice", la mayoría deben tener 4 opciones. Si es oral o desarrollo, las preguntas son abiertas con una respuesta modelo.`
-    : `Generá entre 6 y 8 PREGUNTAS DE PRÁCTICA de "${examen.materia}" para repasar los temas. Mezclá opción múltiple (4 opciones) con preguntas abiertas cortas. Priorizá los temas no marcados como ya sabidos.`
+    ? `Generá un SIMULACRO de examen completo de ${materiaSegura} (tipo: ${examen.tipo}). Entre 8 y 12 preguntas que cubran todos los temas, con dificultad realista de examen. Si el tipo incluye "multiple_choice", la mayoría deben tener 4 opciones. Si es oral o desarrollo, las preguntas son abiertas con una respuesta modelo.`
+    : `Generá entre 6 y 8 PREGUNTAS DE PRÁCTICA de ${materiaSegura} para repasar los temas. Mezclá opción múltiple (4 opciones) con preguntas abiertas cortas. Priorizá los temas no marcados como ya sabidos.`
 
   let message: Anthropic.Message
   try {
@@ -74,7 +82,9 @@ Estructura exacta:
   ]
 }
 
-Reglas: "opciones" es null en preguntas abiertas. "duracion_min" estimá según cantidad/tipo. Respondé SOLO con el JSON.`,
+Reglas: "opciones" es null en preguntas abiertas. "duracion_min" estimá según cantidad/tipo. Respondé SOLO con el JSON.
+
+${PROMPT_GUARD}`,
       messages: [{ role: 'user', content: `${instruccion}\n\nTemas:\n${listaTemas}` }],
     })
   } catch (e) {

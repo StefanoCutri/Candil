@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isUuid, sanitizeText, MAX_LEN } from '@/lib/security'
 
 // Cliente con cookies para identificar al usuario logueado
 async function getAuthClient() {
@@ -78,10 +79,13 @@ async function handlePOST(request: Request) {
   const ctx = await requirePlus()
   if (ctx.error) return ctx.error
   const { user, admin } = ctx
-  const body = await request.json() as { action: string; nombre?: string; codigo?: string; grupoId?: string; planId?: string }
+  const body = await request.json().catch(() => null) as { action?: string; nombre?: string; codigo?: string; grupoId?: string; planId?: string } | null
+  if (!body || typeof body.action !== 'string') {
+    return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
+  }
 
   if (body.action === 'crear') {
-    const nombre = (body.nombre ?? '').trim()
+    const nombre = sanitizeText(body.nombre, MAX_LEN.grupo)
     if (!nombre) return NextResponse.json({ error: 'Poné un nombre al grupo.' }, { status: 400 })
     const { data: grupo, error } = await admin.from('grupos').insert({ nombre, owner_id: user.id }).select('id').single()
     if (error || !grupo) return NextResponse.json({ error: 'No pude crear el grupo.' }, { status: 500 })
@@ -90,8 +94,8 @@ async function handlePOST(request: Request) {
   }
 
   if (body.action === 'unirse') {
-    const codigo = (body.codigo ?? '').trim().toUpperCase()
-    if (!codigo) return NextResponse.json({ error: 'Ingresá un código.' }, { status: 400 })
+    const codigo = (typeof body.codigo === 'string' ? body.codigo : '').trim().toUpperCase().slice(0, 20)
+    if (!/^[A-Z0-9-]+$/.test(codigo)) return NextResponse.json({ error: 'Ingresá un código.' }, { status: 400 })
     const { data: grupo } = await admin.from('grupos').select('id').eq('codigo', codigo).single()
     if (!grupo) return NextResponse.json({ error: 'No encontré ningún grupo con ese código.' }, { status: 404 })
     const { error } = await admin.from('grupo_miembros').upsert({ grupo_id: grupo.id, user_id: user.id })
@@ -100,7 +104,7 @@ async function handlePOST(request: Request) {
   }
 
   if (body.action === 'salir') {
-    if (!body.grupoId) return NextResponse.json({ error: 'Falta grupoId' }, { status: 400 })
+    if (!isUuid(body.grupoId)) return NextResponse.json({ error: 'Falta grupoId' }, { status: 400 })
     await admin.from('grupo_miembros').delete().eq('grupo_id', body.grupoId).eq('user_id', user.id)
     // Si era el dueño y queda vacío, borrar el grupo
     const { data: rest } = await admin.from('grupo_miembros').select('user_id').eq('grupo_id', body.grupoId)
@@ -109,7 +113,7 @@ async function handlePOST(request: Request) {
   }
 
   if (body.action === 'compartir') {
-    if (!body.grupoId || !body.planId) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
+    if (!isUuid(body.grupoId) || !isUuid(body.planId)) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
     // Validar membresía y que el plan sea del usuario
     const { data: yo } = await admin.from('grupo_miembros').select('user_id').eq('grupo_id', body.grupoId).eq('user_id', user.id).single()
     if (!yo) return NextResponse.json({ error: 'No sos parte de este grupo.' }, { status: 403 })

@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isUuid, sanitizeText, wrapUserInput, PROMPT_GUARD, checkRateLimit, RATE_LIMIT_MSG, MAX_LEN } from '@/lib/security'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -38,7 +39,13 @@ async function handler(request: Request) {
     return NextResponse.json({ error: 'El audio resumen es una feature Plus.', code: 'plus_required' }, { status: 403 })
   }
 
-  const { examenId } = await request.json() as { examenId: string }
+  if (!checkRateLimit(user.id, 'audio-resumen')) {
+    return NextResponse.json({ error: RATE_LIMIT_MSG }, { status: 429 })
+  }
+
+  const body = await request.json().catch(() => null) as { examenId?: unknown } | null
+  const examenId = body?.examenId
+  if (!isUuid(examenId)) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
   const { data: examen } = await supabase
     .from('examenes')
     .select('materia, tipo, temas(nombre, ya_lo_se)')
@@ -56,8 +63,10 @@ async function handler(request: Request) {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200,
-      system: `Sos Candil. Escribís un resumen hablado para escuchar (como un audio de repaso), cálido y claro, en "vos" rioplatense. Sin títulos ni markdown ni listas con guiones: texto corrido y natural para ser leído en voz alta. Máximo ~250 palabras.`,
-      messages: [{ role: 'user', content: `Materia: ${examen.materia}. Hacé un repaso hablado de estos temas: ${temas.map(t => t.nombre).join(', ')}.` }],
+      system: `Sos Candil. Escribís un resumen hablado para escuchar (como un audio de repaso), cálido y claro, en "vos" rioplatense. Sin títulos ni markdown ni listas con guiones: texto corrido y natural para ser leído en voz alta. Máximo ~250 palabras.
+
+${PROMPT_GUARD}`,
+      messages: [{ role: 'user', content: `Materia: ${wrapUserInput(sanitizeText(examen.materia, MAX_LEN.materia))}. Hacé un repaso hablado de estos temas: ${temas.map(t => wrapUserInput(sanitizeText(t.nombre, MAX_LEN.tema))).join(', ')}.` }],
     })
     guion = (msg.content[0] as { text: string }).text.trim()
   } catch (e) {

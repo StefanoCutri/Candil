@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isUuid, sniffMime } from '@/lib/security'
 
 const MB = 1024 * 1024
 const LIMITES = {
   pro: { porArchivo: 10 * MB, total: 500 * MB },
   plus: { porArchivo: 50 * MB, total: 5 * 1024 * MB },
 } as const
-
-const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
 async function handlePOST(request: Request) {
   const cookieStore = await cookies()
@@ -46,7 +45,7 @@ async function handlePOST(request: Request) {
   const form = await request.formData()
   const archivo = form.get('archivo')
   const examenId = form.get('examenId')
-  if (!(archivo instanceof File) || typeof examenId !== 'string' || !examenId) {
+  if (!(archivo instanceof File) || !isUuid(examenId)) {
     return NextResponse.json({ error: 'Faltan archivo o examenId' }, { status: 400 })
   }
 
@@ -59,18 +58,21 @@ async function handlePOST(request: Request) {
     .single()
   if (!examen) return NextResponse.json({ error: 'Examen no encontrado' }, { status: 404 })
 
-  const esPdf = archivo.type === 'application/pdf'
-  const esImagen = TIPOS_IMAGEN.includes(archivo.type)
-  if (!esPdf && !esImagen) {
-    return NextResponse.json({ error: 'Solo PDF o imágenes (JPG, PNG, WebP, HEIC)' }, { status: 400 })
-  }
-
   if (archivo.size > limite.porArchivo) {
     return NextResponse.json(
       { error: `El archivo supera el máximo de ${limite.porArchivo / MB}MB de tu plan` },
       { status: 400 }
     )
   }
+
+  // Tipo real por magic bytes: el Content-Type y la extensión los controla el
+  // cliente y no alcanzan para bloquear ejecutables, HTML, SVG, etc.
+  const buffer = Buffer.from(await archivo.arrayBuffer())
+  const mimeReal = sniffMime(buffer)
+  if (!mimeReal) {
+    return NextResponse.json({ error: 'Solo PDF o imágenes (JPG, PNG, WebP, HEIC)' }, { status: 400 })
+  }
+  const esPdf = mimeReal === 'application/pdf'
 
   const { data: existentes } = await supabase
     .from('archivos')
@@ -87,10 +89,9 @@ async function handlePOST(request: Request) {
   const nombreLimpio = archivo.name.replace(/[^\w.\-]+/g, '_')
   const storagePath = `${user.id}/${examenId}/${Date.now()}_${nombreLimpio}`
 
-  const buffer = Buffer.from(await archivo.arrayBuffer())
   const { error: uploadError } = await supabase.storage
     .from('apuntes')
-    .upload(storagePath, buffer, { contentType: archivo.type })
+    .upload(storagePath, buffer, { contentType: mimeReal })
   if (uploadError) {
     return NextResponse.json({ error: 'Algo salió mal subiendo el archivo, intentá de nuevo' }, { status: 500 })
   }
@@ -100,7 +101,7 @@ async function handlePOST(request: Request) {
     .insert({
       examen_id: examenId,
       user_id: user.id,
-      nombre: archivo.name,
+      nombre: archivo.name.replace(/<[^>]*>?/g, '').slice(0, 200),
       tipo: esPdf ? 'pdf' : 'imagen',
       storage_path: storagePath,
       tamanio_bytes: archivo.size,

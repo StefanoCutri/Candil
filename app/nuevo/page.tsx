@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { CandleIcon } from '@/components/CandleIcon'
 import UpgradeModal from '@/components/UpgradeModal'
 import { useTranslations, useLocale } from 'next-intl'
+import { sanitizeText, MAX_LEN } from '@/lib/security'
 
 /* ── Types ── */
 type TipoExamen = 'multiple_choice' | 'oral' | 'desarrollo' | 'integrador'
@@ -105,7 +106,7 @@ export default function NuevoExamenPage() {
 
   /* ── Temas ── */
   function agregarTema() {
-    const nombre = nuevoTema.trim()
+    const nombre = sanitizeText(nuevoTema, MAX_LEN.tema)
     if (!nombre) return
     setTemas(prev => [...prev, { id: crypto.randomUUID(), nombre, yaloSe: false }])
     setNuevoTema('')
@@ -187,7 +188,7 @@ export default function NuevoExamenPage() {
         .from('examenes')
         .insert({
           user_id: user.id,
-          materia,
+          materia: sanitizeText(materia, MAX_LEN.materia),
           tipo: tipos.join(', '),
           fecha,
           hora: hora || null,
@@ -205,7 +206,7 @@ export default function NuevoExamenPage() {
           .insert(
             temas.map((t, i) => ({
               examen_id: examen.id,
-              nombre: t.nombre,
+              nombre: sanitizeText(t.nombre, MAX_LEN.tema),
               ya_lo_se: t.yaloSe,
               peso: null,
               orden: i,

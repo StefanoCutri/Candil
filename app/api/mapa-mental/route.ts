@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isUuid, sanitizeText, wrapUserInput, PROMPT_GUARD, checkRateLimit, RATE_LIMIT_MSG, MAX_LEN } from '@/lib/security'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -38,7 +39,13 @@ async function handler(request: Request) {
     return NextResponse.json({ error: 'El mapa mental es una feature Plus.', code: 'plus_required' }, { status: 403 })
   }
 
-  const { examenId } = await request.json() as { examenId: string }
+  if (!checkRateLimit(user.id, 'mapa-mental')) {
+    return NextResponse.json({ error: RATE_LIMIT_MSG }, { status: 429 })
+  }
+
+  const body = await request.json().catch(() => null) as { examenId?: unknown } | null
+  const examenId = body?.examenId
+  if (!isUuid(examenId)) return NextResponse.json({ error: 'examenId requerido' }, { status: 400 })
   const { data: examen } = await supabase
     .from('examenes')
     .select('materia, temas(nombre)')
@@ -67,8 +74,10 @@ Estructura exacta:
   ]
 }
 
-Reglas: una rama por tema importante. 2 a 5 nodos por rama, conceptos cortos (1-4 palabras). Respondé SOLO con el JSON.`,
-      messages: [{ role: 'user', content: `Materia: ${examen.materia}\nTemas:\n${temas.map(t => `- ${t.nombre}`).join('\n')}` }],
+Reglas: una rama por tema importante. 2 a 5 nodos por rama, conceptos cortos (1-4 palabras). Respondé SOLO con el JSON.
+
+${PROMPT_GUARD}`,
+      messages: [{ role: 'user', content: `Materia: ${wrapUserInput(sanitizeText(examen.materia, MAX_LEN.materia))}\nTemas:\n${temas.map(t => `- ${wrapUserInput(sanitizeText(t.nombre, MAX_LEN.tema))}`).join('\n')}` }],
     })
   } catch (e) {
     console.error('[mapa-mental] Error Anthropic:', e)
