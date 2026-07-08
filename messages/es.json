@@ -430,7 +430,13 @@
     "generating": "Generando…",
     "generate_audio": "Generar audio",
     "audio_coming_soon": "Audio resumen · Próximamente",
-    "audio_coming_soon_hint": "Disponible pronto para usuarios Plus"
+    "audio_coming_soon_hint": "Disponible pronto para usuarios Plus",
+    "resumen_title": "❖ Resumen completo",
+    "resumen_generate": "Generar resumen",
+    "resumen_download_pdf": "Descargar PDF",
+    "resumen_downloading": "Generando...",
+    "resumen_pdf_title": "Resumen completo",
+    "resumen_pdf_footer": "Generado con Candil — candil.app"
   },
   "landing": {
     "nav_how": "Cómo funciona",
@@ -532,5 +538,36 @@
     "primer_share_desc": "Compartiste tu plan con alguien",
     "primer_grupo_nombre": "En equipo",
     "primer_grupo_desc": "Te uniste a un grupo de estudio"
+  },
+  "guia": {
+    "title": "Guía de estudio",
+    "card_title": "≡ Guía generada desde tus temas y apuntes",
+    "generate": "Generar guía",
+    "regenerate": "↻ Regenerar",
+    "generating": "Armando tu guía…",
+    "download_pdf": "Descargar PDF",
+    "downloading": "Generando...",
+    "generic_error": "Algo salió mal, intentá de nuevo.",
+    "locked_pitch": "Candil arma una guía de estudio con los conceptos clave, definiciones y relaciones de cada tema, lista para leer o descargar en PDF.",
+    "unlock_pro": "Desbloqueá con Pro →",
+    "pdf_title": "Guía de estudio",
+    "pdf_footer": "Generado con Candil — candil.app"
+  },
+  "flashcards": {
+    "title": "Flashcards",
+    "generate": "Generar flashcards",
+    "regenerate": "↻ Regenerar",
+    "generating": "Armando tus flashcards…",
+    "generic_error": "Algo salió mal, intentá de nuevo.",
+    "locked_pitch": "Candil genera flashcards desde tus temas y apuntes para repasar rápido: pregunta de un lado, respuesta del otro.",
+    "unlock_pro": "Desbloqueá con Pro →",
+    "counter": "{current} de {total}",
+    "tap_to_flip": "Tocá la carta para darla vuelta",
+    "know": "La sé ✓",
+    "dont_know": "No la sé",
+    "done_title": "¡Terminaste la ronda!",
+    "score": "Sabías {known} de {total}",
+    "repeat_failed": "Repetir las falladas ({count})",
+    "repeat_all": "Repetir todas"
   }
 }

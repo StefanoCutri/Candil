@@ -8,6 +8,8 @@ import Pomodoro from '@/components/Pomodoro'
 import AjustePanel from '@/components/AjustePanel'
 import ApuntesSection from '@/components/ApuntesSection'
 import PracticaSection from '@/components/PracticaSection'
+import GuiaEstudioSection from '@/components/GuiaEstudioSection'
+import FlashcardsSection from '@/components/FlashcardsSection'
 import PlusSection from '@/components/PlusSection'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
@@ -736,8 +738,22 @@ export default function PlanPage() {
           onLocked={() => setShowUpgrade(true)}
         />
 
+        <GuiaEstudioSection
+          examenId={plan.examen_id}
+          materia={plan.examenes.materia}
+          esPro={esPro}
+          onLocked={() => setShowUpgrade(true)}
+        />
+
+        <FlashcardsSection
+          examenId={plan.examen_id}
+          esPro={esPro}
+          onLocked={() => setShowUpgrade(true)}
+        />
+
         <PlusSection
           examenId={plan.examen_id}
+          materia={plan.examenes.materia}
           esPlus={esPlus}
           onLocked={() => setShowUpgrade(true)}
         />

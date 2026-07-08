@@ -128,3 +128,76 @@ export function exportPlanPdf(data: PlanPdfData) {
   const slug = data.materia.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'plan'
   doc.save(`candil-plan-${slug}.pdf`)
 }
+
+// \u2500\u2500 Export de documentos Markdown (gu\u00eda de estudio, resumen ejecutivo) \u2500\u2500
+
+function slugify(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'documento'
+}
+
+export function exportMarkdownPdf(titulo: string, materia: string, markdown: string, footer: string) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const marginX = 16
+  const maxW = pageW - marginX * 2
+  let y = 22
+
+  function ensureSpace(lineH: number) {
+    if (y + lineH > pageH - 16) { doc.addPage(); y = 20 }
+  }
+
+  doc.setTextColor(INK)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.text(`Candil \u2014 ${titulo}`, marginX, y)
+  y += 8
+  doc.setFontSize(12)
+  doc.setTextColor(INK_SOFT)
+  doc.text(materia, marginX, y)
+  y += 6
+  doc.setDrawColor(BORDER)
+  doc.setLineWidth(0.3)
+  doc.line(marginX, y, pageW - marginX, y)
+  y += 8
+
+  for (const raw of markdown.split('\n')) {
+    const line = raw.trim()
+    if (!line) { y += 2; continue }
+    const h = line.match(/^(#{1,4})\s+(.*)/)
+    const bullet = line.match(/^[-*\u2022]\s+(.*)/)
+    const clean = (s: string) => s.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
+    if (h) {
+      const level = h[1].length
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(level === 1 ? 14 : level === 2 ? 12 : 10.5)
+      doc.setTextColor(INK)
+      const wrapped = doc.splitTextToSize(clean(h[2]), maxW) as string[]
+      ensureSpace(wrapped.length * 6 + 4)
+      y += level === 1 ? 2 : 4
+      doc.text(wrapped, marginX, y)
+      y += wrapped.length * 6 + 2
+    } else {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(INK)
+      const text = bullet ? `\u2022  ${clean(bullet[1])}` : clean(line)
+      const indent = bullet ? 3 : 0
+      const wrapped = doc.splitTextToSize(text, maxW - indent) as string[]
+      ensureSpace(wrapped.length * 4.6)
+      doc.text(wrapped, marginX + indent, y)
+      y += wrapped.length * 4.6 + 1.5
+    }
+  }
+
+  const pages = doc.getNumberOfPages()
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(INK_SOFT)
+    doc.text(footer, pageW / 2, pageH - 8, { align: 'center' })
+  }
+
+  doc.save(`candil-${slugify(titulo)}-${slugify(materia)}.pdf`)
+}

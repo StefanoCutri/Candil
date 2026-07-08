@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import MarkdownView from '@/components/MarkdownView'
 
 type Rama = { titulo: string; nodos: string[] }
 type Mapa = { centro: string; ramas: Rama[] }
@@ -10,8 +11,9 @@ type Msg = { role: 'user' | 'assistant'; content: string }
 const card = { padding: '20px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' } as const
 const btn = { fontSize: 12.5, fontFamily: 'inherit', color: 'var(--amber)', background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '9px 16px', cursor: 'pointer' } as const
 
-export default function PlusSection({ examenId, esPlus, onLocked }: {
+export default function PlusSection({ examenId, materia = '', esPlus, onLocked }: {
   examenId: string
+  materia?: string
   esPlus: boolean
   onLocked: () => void
 }) {
@@ -33,6 +35,7 @@ export default function PlusSection({ examenId, esPlus, onLocked }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <MapaMental examenId={examenId} />
           <ChatApuntes examenId={examenId} />
+          <ResumenNotebook examenId={examenId} materia={materia} />
           <AudioResumen examenId={examenId} />
         </div>
       )}
@@ -143,6 +146,60 @@ function ChatApuntes({ examenId }: { examenId: string }) {
           placeholder={t('chat_placeholder')} style={{ flex: 1 }} />
         <button onClick={enviar} disabled={cargando || !input.trim()} style={{ ...btn, opacity: cargando || !input.trim() ? 0.5 : 1 }}>{t('send')}</button>
       </div>
+    </div>
+  )
+}
+
+/* ── Resumen ejecutivo del notebook ── */
+function ResumenNotebook({ examenId, materia }: { examenId: string; materia: string }) {
+  const t = useTranslations('plus')
+  const [resumen, setResumen] = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [descargando, setDescargando] = useState(false)
+  const [error, setError] = useState('')
+
+  async function generar() {
+    setError(''); setCargando(true)
+    try {
+      const res = await fetch('/api/resumen-notebook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examenId }) })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
+      setResumen(data.resumen as string)
+    } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
+    finally { setCargando(false) }
+  }
+
+  async function descargarPdf() {
+    if (!resumen) return
+    setDescargando(true)
+    try {
+      const { exportMarkdownPdf } = await import('@/lib/exportPdf')
+      exportMarkdownPdf(t('resumen_pdf_title'), materia, resumen, t('resumen_pdf_footer'))
+    } finally { setDescargando(false) }
+  }
+
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: resumen ? 16 : 0, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t('resumen_title')}</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          {resumen && (
+            <button onClick={descargarPdf} disabled={descargando}
+              style={{ ...btn, color: 'var(--ink-soft)', background: 'transparent', border: '0.5px solid var(--border-strong)' }}>
+              {descargando ? t('resumen_downloading') : t('resumen_download_pdf')}
+            </button>
+          )}
+          <button onClick={generar} disabled={cargando} style={{ ...btn, cursor: cargando ? 'wait' : 'pointer' }}>
+            {cargando ? t('generating') : resumen ? t('regenerate') : t('resumen_generate')}
+          </button>
+        </div>
+      </div>
+      {error && <p style={{ fontSize: 12, color: 'rgba(235,160,140,0.9)', marginTop: 10 }}>{error}</p>}
+      {resumen && (
+        <div style={{ animation: 'panelIn 300ms var(--ease-out) both', maxHeight: 480, overflowY: 'auto', paddingRight: 6 }}>
+          <MarkdownView markdown={resumen} />
+        </div>
+      )}
     </div>
   )
 }

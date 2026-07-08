@@ -430,7 +430,13 @@
     "generating": "Generating…",
     "generate_audio": "Generate audio",
     "audio_coming_soon": "Audio summary · Coming soon",
-    "audio_coming_soon_hint": "Available soon for Plus users"
+    "audio_coming_soon_hint": "Available soon for Plus users",
+    "resumen_title": "❖ Full summary",
+    "resumen_generate": "Generate summary",
+    "resumen_download_pdf": "Download PDF",
+    "resumen_downloading": "Generating...",
+    "resumen_pdf_title": "Full summary",
+    "resumen_pdf_footer": "Generated with Candil — candil.app"
   },
   "landing": {
     "nav_how": "How it works",
@@ -532,5 +538,36 @@
     "primer_share_desc": "You shared your plan with someone",
     "primer_grupo_nombre": "Team player",
     "primer_grupo_desc": "You joined a study group"
+  },
+  "guia": {
+    "title": "Study guide",
+    "card_title": "≡ Guide generated from your topics and notes",
+    "generate": "Generate guide",
+    "regenerate": "↻ Regenerate",
+    "generating": "Building your guide…",
+    "download_pdf": "Download PDF",
+    "downloading": "Generating...",
+    "generic_error": "Something went wrong, try again.",
+    "locked_pitch": "Candil builds a study guide with the key concepts, definitions and relationships for each topic, ready to read or download as PDF.",
+    "unlock_pro": "Unlock with Pro →",
+    "pdf_title": "Study guide",
+    "pdf_footer": "Generated with Candil — candil.app"
+  },
+  "flashcards": {
+    "title": "Flashcards",
+    "generate": "Generate flashcards",
+    "regenerate": "↻ Regenerate",
+    "generating": "Building your flashcards…",
+    "generic_error": "Something went wrong, try again.",
+    "locked_pitch": "Candil generates flashcards from your topics and notes for quick review: question on one side, answer on the other.",
+    "unlock_pro": "Unlock with Pro →",
+    "counter": "{current} of {total}",
+    "tap_to_flip": "Tap the card to flip it",
+    "know": "I know it ✓",
+    "dont_know": "I don't know it",
+    "done_title": "Round complete!",
+    "score": "You knew {known} of {total}",
+    "repeat_failed": "Repeat missed ones ({count})",
+    "repeat_all": "Repeat all"
   }
 }

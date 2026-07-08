@@ -430,7 +430,13 @@
     "generating": "Gerando…",
     "generate_audio": "Gerar áudio",
     "audio_coming_soon": "Resumo em áudio · Em breve",
-    "audio_coming_soon_hint": "Disponível em breve para usuários Plus"
+    "audio_coming_soon_hint": "Disponível em breve para usuários Plus",
+    "resumen_title": "❖ Resumo completo",
+    "resumen_generate": "Gerar resumo",
+    "resumen_download_pdf": "Baixar PDF",
+    "resumen_downloading": "Gerando...",
+    "resumen_pdf_title": "Resumo completo",
+    "resumen_pdf_footer": "Gerado com Candil — candil.app"
   },
   "landing": {
     "nav_how": "Como funciona",
@@ -532,5 +538,36 @@
     "primer_share_desc": "Você compartilhou seu plano com alguém",
     "primer_grupo_nombre": "Em equipe",
     "primer_grupo_desc": "Você entrou em um grupo de estudo"
+  },
+  "guia": {
+    "title": "Guia de estudo",
+    "card_title": "≡ Guia gerado a partir dos seus temas e anotações",
+    "generate": "Gerar guia",
+    "regenerate": "↻ Regenerar",
+    "generating": "Montando seu guia…",
+    "download_pdf": "Baixar PDF",
+    "downloading": "Gerando...",
+    "generic_error": "Algo deu errado, tente de novo.",
+    "locked_pitch": "O Candil monta um guia de estudo com os conceitos-chave, definições e relações de cada tema, pronto para ler ou baixar em PDF.",
+    "unlock_pro": "Desbloqueie com o Pro →",
+    "pdf_title": "Guia de estudo",
+    "pdf_footer": "Gerado com Candil — candil.app"
+  },
+  "flashcards": {
+    "title": "Flashcards",
+    "generate": "Gerar flashcards",
+    "regenerate": "↻ Regenerar",
+    "generating": "Montando seus flashcards…",
+    "generic_error": "Algo deu errado, tente de novo.",
+    "locked_pitch": "O Candil gera flashcards a partir dos seus temas e anotações para revisar rápido: pergunta de um lado, resposta do outro.",
+    "unlock_pro": "Desbloqueie com o Pro →",
+    "counter": "{current} de {total}",
+    "tap_to_flip": "Toque no cartão para virá-lo",
+    "know": "Eu sei ✓",
+    "dont_know": "Não sei",
+    "done_title": "Rodada concluída!",
+    "score": "Você sabia {known} de {total}",
+    "repeat_failed": "Repetir as erradas ({count})",
+    "repeat_all": "Repetir todas"
   }
 }
