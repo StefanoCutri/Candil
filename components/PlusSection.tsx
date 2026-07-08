@@ -147,40 +147,18 @@ function ChatApuntes({ examenId }: { examenId: string }) {
   )
 }
 
-/* ── Audio resumen ── */
-function AudioResumen({ examenId }: { examenId: string }) {
+/* ── Audio resumen (próximamente; el endpoint /api/audio-resumen sigue vivo) ── */
+function AudioResumen({ examenId: _examenId }: { examenId: string }) {
   const t = useTranslations('plus')
-  const [cargando, setCargando] = useState(false)
-  const [audio, setAudio] = useState<string | null>(null)
-  const [guion, setGuion] = useState('')
-  const [aviso, setAviso] = useState('')
-  const [error, setError] = useState('')
-
-  async function generar() {
-    setError(''); setAviso(''); setAudio(null); setGuion(''); setCargando(true)
-    try {
-      const res = await fetch('/api/audio-resumen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examenId }) })
-      const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
-      setGuion(data.guion ?? '')
-      setAudio(data.audio ?? null)
-      if (data.aviso) setAviso(data.aviso)
-    } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
-    finally { setCargando(false) }
-  }
-
   return (
     <div style={card}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: guion ? 14 : 0, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 500 }}>{t('audio_title')}</span>
-        <button onClick={generar} disabled={cargando} style={{ ...btn, marginLeft: 'auto', cursor: cargando ? 'wait' : 'pointer' }}>
-          {cargando ? t('generating') : guion ? t('regenerate') : t('generate_audio')}
+        <button disabled style={{ ...btn, marginLeft: 'auto', opacity: 0.5, cursor: 'not-allowed' }}>
+          {t('audio_coming_soon')}
         </button>
       </div>
-      {error && <p style={{ fontSize: 12, color: 'rgba(235,160,140,0.9)' }}>{error}</p>}
-      {aviso && <p style={{ fontSize: 12, color: 'var(--ink-muted)', marginBottom: 10 }}>{aviso}</p>}
-      {audio && <audio controls src={audio} style={{ width: '100%', marginBottom: 12 }} />}
-      {guion && <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.6, fontStyle: 'italic' }}>{guion}</p>}
+      <p style={{ fontSize: 11, color: 'var(--ink-muted)', marginTop: 8 }}>{t('audio_coming_soon_hint')}</p>
     </div>
   )
 }

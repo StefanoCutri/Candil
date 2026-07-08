@@ -428,7 +428,9 @@
     "send": "Enviar",
     "audio_title": "♪ Audio resumen",
     "generating": "Generando…",
-    "generate_audio": "Generar audio"
+    "generate_audio": "Generar audio",
+    "audio_coming_soon": "Audio resumen · Próximamente",
+    "audio_coming_soon_hint": "Disponible pronto para usuarios Plus"
   },
   "landing": {
     "nav_how": "Cómo funciona",

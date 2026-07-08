@@ -428,7 +428,9 @@
     "send": "Send",
     "audio_title": "♪ Audio summary",
     "generating": "Generating…",
-    "generate_audio": "Generate audio"
+    "generate_audio": "Generate audio",
+    "audio_coming_soon": "Audio summary · Coming soon",
+    "audio_coming_soon_hint": "Available soon for Plus users"
   },
   "landing": {
     "nav_how": "How it works",
