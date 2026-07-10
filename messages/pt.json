@@ -562,6 +562,7 @@
     "locked_pitch": "O Candil gera flashcards a partir dos seus temas e anotações para revisar rápido: pergunta de um lado, resposta do outro.",
     "unlock_pro": "Desbloqueie com o Pro →",
     "counter": "{current} de {total}",
+    "review_counter": "Revisando as que você errou: {current} de {total}",
     "tap_to_flip": "Toque no cartão para virá-lo",
     "know": "Eu sei ✓",
     "dont_know": "Não sei",

@@ -69,8 +69,9 @@ async function handlePOST(request: Request) {
   // cliente y no alcanzan para bloquear ejecutables, HTML, SVG, etc.
   const buffer = Buffer.from(await archivo.arrayBuffer())
   const mimeReal = sniffMime(buffer)
+  console.log(`[upload-archivo] tipo detectado: ${mimeReal ?? 'desconocido/rechazado'} — "${archivo.name}" (${archivo.size} bytes, user ${user.id})`)
   if (!mimeReal) {
-    return NextResponse.json({ error: 'Solo PDF o imágenes (JPG, PNG, WebP, HEIC)' }, { status: 400 })
+    return NextResponse.json({ error: 'Solo se aceptan PDFs e imágenes (JPG, PNG, WebP)' }, { status: 400 })
   }
   const esPdf = mimeReal === 'application/pdf'
 

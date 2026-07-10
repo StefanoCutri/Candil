@@ -562,6 +562,7 @@
     "locked_pitch": "Candil generates flashcards from your topics and notes for quick review: question on one side, answer on the other.",
     "unlock_pro": "Unlock with Pro →",
     "counter": "{current} of {total}",
+    "review_counter": "Reviewing the ones you missed: {current} of {total}",
     "tap_to_flip": "Tap the card to flip it",
     "know": "I know it ✓",
     "dont_know": "I don't know it",

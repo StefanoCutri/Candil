@@ -12,11 +12,14 @@ export default function FlashcardsSection({ examenId, esPro, onLocked }: {
 }) {
   const t = useTranslations('flashcards')
   const [cards, setCards] = useState<Card[]>([])
-  const [cola, setCola] = useState<number[]>([]) // índices pendientes de esta ronda
+  const [cola, setCola] = useState<number[]>([]) // índices de la ronda actual
   const [pos, setPos] = useState(0)
   const [volteada, setVolteada] = useState(false)
   const [falladas, setFalladas] = useState<number[]>([])
   const [sabidas, setSabidas] = useState(0)
+  const [ronda, setRonda] = useState<'inicial' | 'repaso'>('inicial')
+  // Score congelado de la primera ronda: el repaso de falladas no lo altera
+  const [resultado, setResultado] = useState<{ sabidas: number; total: number } | null>(null)
   const [terminado, setTerminado] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
@@ -34,34 +37,42 @@ export default function FlashcardsSection({ examenId, esPro, onLocked }: {
       if (!res.ok) throw new Error(data?.error ?? t('generic_error'))
       const nuevas = data.flashcards as Card[]
       setCards(nuevas)
-      empezarRonda(nuevas.map((_, i) => i))
+      empezarRonda(nuevas.map((_, i) => i), 'inicial')
     } catch (e) { setError(e instanceof Error ? e.message : t('generic_error')) }
     finally { setCargando(false) }
   }
 
-  function empezarRonda(indices: number[]) {
+  function empezarRonda(indices: number[], tipo: 'inicial' | 'repaso') {
     setCola(indices)
     setPos(0)
     setVolteada(false)
     setFalladas([])
     setSabidas(0)
+    setRonda(tipo)
+    if (tipo === 'inicial') setResultado(null)
     setTerminado(false)
   }
 
   function responder(laSe: boolean) {
     const idx = cola[pos]
-    let nuevaCola = cola
-    if (!laSe && !falladas.includes(idx)) {
-      // La primera vez que falla, la carta se repite al final de la ronda
-      setFalladas(prev => [...prev, idx])
-      nuevaCola = [...cola, idx]
-      setCola(nuevaCola)
-    }
-    if (laSe) setSabidas(s => s + 1)
+    const nuevasFalladas = !laSe && !falladas.includes(idx) ? [...falladas, idx] : falladas
+    setFalladas(nuevasFalladas)
+    const nuevasSabidas = laSe ? sabidas + 1 : sabidas
+    setSabidas(nuevasSabidas)
     setVolteada(false)
 
-    if (pos + 1 < nuevaCola.length) setPos(pos + 1)
-    else setTerminado(true)
+    if (pos + 1 < cola.length) { setPos(pos + 1); return }
+
+    // Fin de ronda: la inicial congela el score y, si hubo falladas,
+    // encadena una ronda de repaso separada
+    if (ronda === 'inicial') {
+      setResultado({ sabidas: nuevasSabidas, total: cola.length })
+      if (nuevasFalladas.length > 0) {
+        empezarRonda(nuevasFalladas, 'repaso')
+        return
+      }
+    }
+    setTerminado(true)
   }
 
   const idxActual = cola[pos]
@@ -100,7 +111,9 @@ export default function FlashcardsSection({ examenId, esPro, onLocked }: {
       {esPro && cards.length > 0 && !terminado && card && (
         <div style={{ animation: 'panelIn 300ms var(--ease-out) both' }}>
           <p style={{ fontSize: 12, color: 'var(--ink-muted)', textAlign: 'center', marginBottom: 10 }}>
-            {t('counter', { current: pos + 1, total })}
+            {ronda === 'repaso'
+              ? t('review_counter', { current: pos + 1, total })
+              : t('counter', { current: pos + 1, total })}
           </p>
 
           {/* Card con flip */}
@@ -151,16 +164,19 @@ export default function FlashcardsSection({ examenId, esPro, onLocked }: {
         <div style={{ textAlign: 'center', padding: '2rem 1.5rem', borderRadius: 14, background: 'var(--surface)', border: '0.5px solid var(--border)', animation: 'panelIn 300ms var(--ease-out) both' }}>
           <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.1rem', color: 'var(--ink)', marginBottom: 6 }}>{t('done_title')}</p>
           <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>
-            {t('score', { known: sabidas, total: new Set(cola).size })}
+            {t('score', {
+              known: resultado?.sabidas ?? sabidas,
+              total: resultado?.total ?? cola.length,
+            })}
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             {falladas.length > 0 && (
-              <button onClick={() => empezarRonda(falladas)}
+              <button onClick={() => empezarRonda(falladas, 'repaso')}
                 style={{ ...btnBase, color: 'var(--amber)', background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)' }}>
                 {t('repeat_failed', { count: falladas.length })}
               </button>
             )}
-            <button onClick={() => empezarRonda(cards.map((_, i) => i))}
+            <button onClick={() => empezarRonda(cards.map((_, i) => i), 'inicial')}
               style={{ ...btnBase, color: 'var(--ink-soft)', background: 'transparent', border: '0.5px solid var(--border-strong)' }}>
               {t('repeat_all')}
             </button>
