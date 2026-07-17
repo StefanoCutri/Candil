@@ -298,6 +298,45 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── SOCIAL PROOF ── */}
+      <section className="lp-section">
+        <div className="container">
+          <div className="reveal" style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 className="section-h2">{t.rich('proof_title', { em, br })}</h2>
+          </div>
+          <div className="proof-stats reveal">
+            {[
+              { num: t('proof_stat1_num'), label: t('proof_stat1_label') },
+              { num: t('proof_stat2_num'), label: t('proof_stat2_label') },
+              { num: t('proof_stat3_num'), label: t('proof_stat3_label') },
+            ].map(s => (
+              <div key={s.label} className="proof-stat">
+                <div className="proof-num">{s.num}</div>
+                <div className="proof-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="testi-grid">
+            {[
+              { quote: t('testi1_quote'), name: t('testi1_name'), role: t('testi1_role') },
+              { quote: t('testi2_quote'), name: t('testi2_name'), role: t('testi2_role') },
+              { quote: t('testi3_quote'), name: t('testi3_name'), role: t('testi3_role') },
+            ].map((x, i) => (
+              <div key={x.name} className={`testi-card reveal${i > 0 ? ` reveal-delay-${i}` : ''}`}>
+                <p className="testi-quote">{x.quote}</p>
+                <div className="testi-who">
+                  <div className="testi-avatar">{x.name.charAt(0)}</div>
+                  <div>
+                    <div className="testi-name">{x.name}</div>
+                    <div className="testi-role">{x.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── PRICING ── */}
       <section
         className="lp-section"
@@ -354,6 +393,7 @@ export default function LandingPage() {
             <Link href="/registro" className="lp-btn" style={{ fontSize: '15px', padding: '16px 40px' }}>
               {t('start_free_arrow')}
             </Link>
+            <p className="cta-note">{t('cta_note')}</p>
           </div>
         </div>
       </section>

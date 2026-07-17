@@ -8,6 +8,7 @@ import Pomodoro from '@/components/Pomodoro'
 import AjustePanel from '@/components/AjustePanel'
 import PlanTools from '@/components/PlanTools'
 import UpgradeModal from '@/components/UpgradeModal'
+import Confetti from '@/components/Confetti'
 import { CandleIcon } from '@/components/CandleIcon'
 import { useTranslations, useLocale } from 'next-intl'
 import { verificarLogros } from '@/lib/logrosClient'
@@ -139,6 +140,7 @@ export default function PlanPage() {
   const [ajusteOpen, setAjusteOpen] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [flashKeys, setFlashKeys] = useState<Set<string>>(new Set())
+  const [justDoneId, setJustDoneId] = useState<string | null>(null)
   const [archivando, setArchivando] = useState(false)
   const [confirmarBorrar, setConfirmarBorrar] = useState(false)
   const [borrando, setBorrando] = useState(false)
@@ -212,6 +214,10 @@ export default function PlanPage() {
 
     const next = bloques.map(b => b.id === bloqueId ? { ...b, completado: nuevo } : b)
     setBloques(next)
+    if (nuevo) {
+      setJustDoneId(bloqueId)
+      setTimeout(() => setJustDoneId(id => id === bloqueId ? null : id), 600)
+    }
     const { error: updError } = await supabase.from('bloques').update({ completado: nuevo }).eq('id', bloqueId)
     if (updError) {
       // Revertir el optimismo si el UPDATE no entró (p. ej. RLS)
@@ -481,12 +487,17 @@ export default function PlanPage() {
         {/* ── COUNTDOWN ── */}
         <div style={{ marginBottom: '2rem' }}>
           {diasNum > 0 && (
-            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: diasNum < 3 ? 'var(--amber)' : 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+            <p style={{
+              fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em',
+              color: diasNum <= 3 ? 'var(--amber)' : diasNum <= 7 ? 'var(--amber2)' : 'var(--ink)',
+              textShadow: diasNum <= 3 ? '0 0 24px rgba(232,164,74,0.35)' : undefined,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
               {t('days_left_big', { count: diasNum })}
             </p>
           )}
           {diasNum === 0 && (
-            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--amber)' }}>
+            <p style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--amber)', textShadow: '0 0 28px rgba(232,164,74,0.45)', animation: 'urgentPulse 1.8s ease-in-out infinite' }}>
               {t('today')}
             </p>
           )}
@@ -682,6 +693,7 @@ export default function PlanPage() {
                           position: 'relative', flexShrink: 0,
                           transition: 'background 250ms var(--ease-out), border-color 250ms, transform 150ms var(--ease-out)',
                           transform: done ? 'scale(0.95)' : 'scale(1)',
+                          animation: bloqueDb && bloqueDb.id === justDoneId ? 'springCheck 500ms var(--ease-out) both' : undefined,
                         }}>
                           {done && (
                             <span style={{ position: 'absolute', top: 6, left: 4, width: 10, height: 6, borderLeft: '1.5px solid white', borderBottom: '1.5px solid white', transform: 'rotate(-45deg)', display: 'block' }} />
@@ -810,6 +822,7 @@ export default function PlanPage() {
       )}
 
       {/* ── DIA DONE MODAL ── */}
+      {showDiaDone && <Confetti />}
       {showDiaDone && (
         <div
           onClick={e => { if (e.target === e.currentTarget) setShowDiaDone(null) }}

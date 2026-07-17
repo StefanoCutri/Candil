@@ -415,6 +415,53 @@ body.light .cta-final::before {
   .cta-final { padding: 6rem 1.25rem 5rem; }
   .lp-footer { flex-direction: column; text-align: center; }
   .footer-links { margin-left: 0; }
+  .proof-stats { flex-direction: column; gap: 2rem; }
+  .testi-grid { grid-template-columns: 1fr; }
+}
+
+/* ── SOCIAL PROOF ── */
+.proof-stats {
+  display: flex; justify-content: center; gap: 4.5rem;
+  margin: 0 auto 4rem; flex-wrap: wrap;
+}
+.proof-stat { text-align: center; }
+.proof-num {
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 700;
+  letter-spacing: -0.03em; color: var(--amber); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.proof-label {
+  font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-muted); margin-top: 0.6rem; transition: color 400ms;
+}
+.testi-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px; background: var(--border);
+  border: 0.5px solid var(--border); border-radius: 16px; overflow: hidden;
+}
+.testi-card {
+  background: var(--bg2); padding: 2rem 1.75rem;
+  display: flex; flex-direction: column; transition: background 500ms;
+}
+.testi-quote {
+  font-size: 14.5px; color: var(--ink-soft); line-height: 1.7;
+  flex: 1; margin-bottom: 1.5rem; transition: color 400ms;
+}
+.testi-quote::before { content: '“'; color: var(--amber); font-size: 1.4em; line-height: 0; margin-right: 2px; }
+.testi-quote::after { content: '”'; color: var(--amber); font-size: 1.4em; line-height: 0; margin-left: 2px; }
+.testi-who { display: flex; align-items: center; gap: 12px; }
+.testi-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: var(--amber-dim); border: 0.5px solid var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-geist-sans), sans-serif; font-size: 13px; font-weight: 700; color: var(--amber);
+}
+.testi-name { font-size: 13px; font-weight: 500; color: var(--ink); transition: color 400ms; }
+.testi-role { font-size: 11.5px; color: var(--ink-muted); margin-top: 1px; transition: color 400ms; }
+.cta-note {
+  font-size: 12px; color: var(--ink-muted); margin-top: 1.1rem;
+  letter-spacing: 0.04em; transition: color 400ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

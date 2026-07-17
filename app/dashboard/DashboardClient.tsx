@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Pomodoro from '@/components/Pomodoro'
 import { CandleIcon } from '@/components/CandleIcon'
 import UserMenu from '@/components/UserMenu'
+import OnboardingModal from '@/components/OnboardingModal'
 
 export type ExamenRow = {
   id: string
@@ -45,6 +46,22 @@ function progresoDe(examen: ExamenRow) {
   if (bloques.length === 0) return { pct: 0, hasBloques: false }
   const done = bloques.filter(b => b.completado).length
   return { pct: Math.round((done / bloques.length) * 100), hasBloques: true }
+}
+
+/* Escala emocional según días restantes: hoy > crítico (1-3) > pronto (4-7) > normal */
+export type Urgencia = 'hoy' | 'critico' | 'pronto' | 'normal'
+export function nivelUrgencia(dias: number): Urgencia {
+  if (dias === 0) return 'hoy'
+  if (dias <= 3) return 'critico'
+  if (dias <= 7) return 'pronto'
+  return 'normal'
+}
+
+const URGENCIA_GLOW: Record<Urgencia, string | undefined> = {
+  hoy: '0 0 44px -10px rgba(232,164,74,0.45)',
+  critico: '0 0 36px -12px rgba(232,164,74,0.3)',
+  pronto: undefined,
+  normal: undefined,
 }
 
 function bloquesHoyPendientes(examen: ExamenRow) {
@@ -109,7 +126,8 @@ function HeroCard({ examen }: { examen: ExamenRow }) {
   const locale = useLocale()
   const [hover, setHover] = useState(false)
   const dias = diasRestantes(examen.fecha)
-  const urgente = dias >= 0 && dias < 3
+  const urg = nivelUrgencia(dias)
+  const urgente = urg === 'hoy' || urg === 'critico'
   const { pct } = progresoDe(examen)
   const planId = examen.planes?.[0]?.id ?? null
   const pendientesHoy = bloquesHoyPendientes(examen)
@@ -122,12 +140,16 @@ function HeroCard({ examen }: { examen: ExamenRow }) {
         gridColumn: '1 / -1', display: 'flex', flexDirection: 'column',
         borderRadius: 14, padding: '28px 28px 24px',
         background: 'linear-gradient(135deg, var(--surface) 0%, var(--bg2) 100%)',
-        border: `0.5px solid ${hover ? 'var(--border-strong)' : 'var(--border-mid)'}`,
+        border: `0.5px solid ${urgente ? 'var(--border-strong)' : hover ? 'var(--border-strong)' : 'var(--border-mid)'}`,
+        boxShadow: URGENCIA_GLOW[urg],
         textDecoration: 'none', color: 'inherit', cursor: 'pointer',
         transform: hover ? 'translateY(-1px)' : 'none',
-        transition: 'border-color 200ms var(--ease-out), transform 200ms var(--ease-out)',
+        transition: 'border-color 200ms var(--ease-out), transform 200ms var(--ease-out), box-shadow 300ms var(--ease-out)',
         position: 'relative', overflow: 'hidden',
       }}>
+      {urgente && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--amber), var(--amber2))', animation: urg === 'hoy' ? 'urgentPulse 1.8s ease-in-out infinite' : undefined }} />
+      )}
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 280px', minWidth: 0 }}>
           <p style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--amber)', opacity: 0.7, marginBottom: 8 }}>
@@ -149,7 +171,8 @@ function HeroCard({ examen }: { examen: ExamenRow }) {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
           <span style={{
             fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '3rem', lineHeight: 1, fontWeight: 500,
-            color: urgente ? 'var(--amber)' : 'var(--ink)', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums',
+            color: urgente ? 'var(--amber)' : urg === 'pronto' ? 'var(--amber2)' : 'var(--ink)', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums',
+            animation: urg === 'hoy' ? 'urgentPulse 1.8s ease-in-out infinite' : undefined,
           }}>
             {dias === 0 ? t('today') : String(dias)}
           </span>
@@ -183,7 +206,8 @@ function ExamenCardMini({ examen }: { examen: ExamenRow }) {
   const locale = useLocale()
   const [hover, setHover] = useState(false)
   const dias = diasRestantes(examen.fecha)
-  const urgente = dias >= 0 && dias < 3
+  const urg = nivelUrgencia(dias)
+  const urgente = urg === 'hoy' || urg === 'critico'
   const { pct } = progresoDe(examen)
   const planId = examen.planes?.[0]?.id ?? null
 
@@ -195,10 +219,15 @@ function ExamenCardMini({ examen }: { examen: ExamenRow }) {
         borderRadius: 12, padding: '16px 18px 14px',
         display: 'flex', flexDirection: 'column', minHeight: 130,
         textDecoration: 'none', color: 'inherit', cursor: 'pointer',
-        borderColor: hover ? 'var(--border-strong)' : undefined,
+        borderColor: urgente ? 'var(--border-strong)' : hover ? 'var(--border-strong)' : undefined,
+        boxShadow: URGENCIA_GLOW[urg],
         transform: hover ? 'translateY(-1px)' : 'none',
         transition: 'border-color 200ms var(--ease-out), transform 200ms var(--ease-out)',
+        position: 'relative', overflow: 'hidden',
       }}>
+      {urgente && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--amber), var(--amber2))', animation: urg === 'hoy' ? 'urgentPulse 1.8s ease-in-out infinite' : undefined }} />
+      )}
       <h3 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '0.98rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.25, marginBottom: 4 }}>
         {examen.materia}
       </h3>
@@ -492,6 +521,9 @@ export default function DashboardClient({ nombre, email, racha, ultimaActividad,
           <EmptyState />
         )}
       </main>
+
+      {/* Onboarding para usuarios nuevos */}
+      {!hayExamenes && <OnboardingModal />}
 
       {/* FAB Modo foco + modal Pomodoro */}
       <Pomodoro />

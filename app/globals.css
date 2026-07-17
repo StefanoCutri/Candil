@@ -194,6 +194,19 @@ body {
   100% { background-color: var(--surface); }
 }
 
+@keyframes springCheck {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.35); }
+  60%  { transform: scale(0.88); }
+  80%  { transform: scale(1.08); }
+  100% { transform: scale(0.95); }
+}
+
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
 @keyframes typingDot {
   0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
   30%            { opacity: 1; transform: translateY(-3px); }
