@@ -49,7 +49,13 @@
     "new_exam": "+ Nuevo examen",
     "upcoming": "Próximos exámenes",
     "new_exam_card": "Nuevo examen",
-    "completed": "Completados"
+    "completed": "Completados",
+    "hero_next": "Tu próximo examen",
+    "hero_today_blocks": "Hoy tenés {count, plural, one {# bloque pendiente} other {# bloques pendientes}}",
+    "go_to_plan": "Ir al plan →",
+    "show_all": "Ver todos ({count}) →",
+    "past_pending": "Pasados sin completar",
+    "archive": "Archivar"
   },
   "types": {
     "multiple_choice": "Multiple choice",

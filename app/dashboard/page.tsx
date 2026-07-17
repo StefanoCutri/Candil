@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
   const { data: examenes } = await supabase
     .from('examenes')
-    .select('id, materia, tipo, fecha, estado, temas(id), planes(id, bloques(id, completado))')
+    .select('id, materia, tipo, fecha, estado, temas(id), planes(id, bloques(id, completado, dia, tipo))')
     .eq('user_id', user.id)
     .order('fecha', { ascending: true })
 
