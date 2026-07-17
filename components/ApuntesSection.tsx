@@ -19,10 +19,11 @@ function formatBytes(b: number) {
   return `${b} B`
 }
 
-export default function ApuntesSection({ examenId, esPro, onLocked }: {
+export default function ApuntesSection({ examenId, esPro, onLocked, embedded = false }: {
   examenId: string
   esPro: boolean
   onLocked: () => void
+  embedded?: boolean
 }) {
   const supabase = createClient()
   const t = useTranslations('apuntes')
@@ -72,12 +73,14 @@ export default function ApuntesSection({ examenId, esPro, onLocked }: {
   }
 
   return (
-    <section style={{ marginTop: '3rem' }}>
+    <section style={{ marginTop: embedded ? 0 : '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
-          {t('title')}
-        </h2>
-        {!esPro && (
+        {!embedded && (
+          <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
+            {t('title')}
+          </h2>
+        )}
+        {!esPro && !embedded && (
           <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
         )}
         <button

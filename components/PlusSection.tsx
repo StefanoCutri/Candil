@@ -11,6 +11,30 @@ type Msg = { role: 'user' | 'assistant'; content: string }
 const card = { padding: '20px', borderRadius: 12, background: 'var(--surface)', border: '0.5px solid var(--border)' } as const
 const btn = { fontSize: 12.5, fontFamily: 'inherit', color: 'var(--amber)', background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', borderRadius: 100, padding: '9px 16px', cursor: 'pointer' } as const
 
+/* Render de una sola herramienta Plus (para las tabs del plan) */
+export function PlusTool({ tool, examenId, materia = '', esPlus, onLocked }: {
+  tool: 'mapa' | 'chat' | 'resumen' | 'audio'
+  examenId: string
+  materia?: string
+  esPlus: boolean
+  onLocked: () => void
+}) {
+  const t = useTranslations('plus')
+  if (!esPlus) {
+    return (
+      <button onClick={onLocked}
+        style={{ width: '100%', textAlign: 'center', padding: '1.75rem 1.5rem', border: '0.5px dashed var(--border-mid)', borderRadius: 10, background: 'transparent', color: 'var(--ink-muted)', fontSize: 13, lineHeight: 1.6, cursor: 'pointer', fontFamily: 'inherit' }}>
+        {t('locked_pitch')}
+        <span style={{ display: 'block', marginTop: 6, color: 'var(--amber)', fontSize: 12 }}>{t('unlock_plus')}</span>
+      </button>
+    )
+  }
+  if (tool === 'mapa') return <MapaMental examenId={examenId} />
+  if (tool === 'chat') return <ChatApuntes examenId={examenId} />
+  if (tool === 'resumen') return <ResumenNotebook examenId={examenId} materia={materia} />
+  return <AudioResumen examenId={examenId} />
+}
+
 export default function PlusSection({ examenId, materia = '', esPlus, onLocked }: {
   examenId: string
   materia?: string

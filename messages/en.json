@@ -1,4 +1,14 @@
 {
+  "tools": {
+    "tab_apuntes": "Notes",
+    "tab_practica": "Practice",
+    "tab_flashcards": "Flashcards",
+    "tab_guia": "Study guide",
+    "tab_more": "More",
+    "tab_mapa": "Mind map",
+    "tab_chat": "Chat with notes",
+    "tab_resumen": "Full summary"
+  },
   "common": {
     "back": "Back",
     "next": "Next",

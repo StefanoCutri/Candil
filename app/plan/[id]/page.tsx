@@ -6,11 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import Pomodoro from '@/components/Pomodoro'
 import AjustePanel from '@/components/AjustePanel'
-import ApuntesSection from '@/components/ApuntesSection'
-import PracticaSection from '@/components/PracticaSection'
-import GuiaEstudioSection from '@/components/GuiaEstudioSection'
-import FlashcardsSection from '@/components/FlashcardsSection'
-import PlusSection from '@/components/PlusSection'
+import PlanTools from '@/components/PlanTools'
 import UpgradeModal from '@/components/UpgradeModal'
 import { CandleIcon } from '@/components/CandleIcon'
 import { useTranslations, useLocale } from 'next-intl'
@@ -725,40 +721,17 @@ export default function PlanPage() {
           )
         })}
 
-        {/* ── APUNTES (Pro) ── */}
-        <ApuntesSection
-          examenId={plan.examen_id}
-          esPro={esPro}
-          onLocked={() => setShowUpgrade(true)}
-        />
-
-        <PracticaSection
-          examenId={plan.examen_id}
-          esPro={esPro}
-          onLocked={() => setShowUpgrade(true)}
-        />
-
-        <GuiaEstudioSection
+        {/* ── HERRAMIENTAS (tabs) ── */}
+        <PlanTools
           examenId={plan.examen_id}
           materia={plan.examenes.materia}
           esPro={esPro}
-          onLocked={() => setShowUpgrade(true)}
-        />
-
-        <FlashcardsSection
-          examenId={plan.examen_id}
-          esPro={esPro}
-          onLocked={() => setShowUpgrade(true)}
-        />
-
-        <PlusSection
-          examenId={plan.examen_id}
-          materia={plan.examenes.materia}
           esPlus={esPlus}
           onLocked={() => setShowUpgrade(true)}
         />
 
         {/* ── CONFIGURACIÓN ── */}
+        <hr className="divider" style={{ marginTop: '4rem' }} />
         <section style={{ marginTop: '4rem' }}>
           <h2 style={{ fontSize: 11, letterSpacing: '0.15em', fontWeight: 500, textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 16 }}>
             {t('config')}

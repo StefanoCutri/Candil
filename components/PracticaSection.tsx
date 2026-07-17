@@ -13,10 +13,11 @@ type Pregunta = {
 type Practica = { titulo: string; duracion_min?: number; preguntas: Pregunta[] }
 type Modo = 'preguntas' | 'simulacro'
 
-export default function PracticaSection({ examenId, esPro, onLocked }: {
+export default function PracticaSection({ examenId, esPro, onLocked, embedded = false }: {
   examenId: string
   esPro: boolean
   onLocked: () => void
+  embedded?: boolean
 }) {
   const t = useTranslations('practica')
   const [cargando, setCargando] = useState<Modo | null>(null)
@@ -67,15 +68,17 @@ export default function PracticaSection({ examenId, esPro, onLocked }: {
   const conOpciones = practica ? practica.preguntas.filter(p => p.opciones).length : 0
 
   return (
-    <section style={{ marginTop: '3rem' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
-          {t('title')}
-        </h2>
-        {!esPro && (
-          <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
-        )}
-      </div>
+    <section style={{ marginTop: embedded ? 0 : '3rem' }}>
+      {!embedded && (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <h2 style={{ fontFamily: 'var(--font-geist-sans), sans-serif', fontSize: '1.2rem', fontWeight: 500, color: 'var(--ink)' }}>
+            {t('title')}
+          </h2>
+          {!esPro && (
+            <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 100, background: 'var(--amber-dim)', border: '0.5px solid var(--border-mid)', color: 'var(--amber)', letterSpacing: '0.06em', fontWeight: 500 }}>PRO</span>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button onClick={() => generar('preguntas')} disabled={cargando !== null}
